@@ -1,0 +1,29 @@
+//
+//  MineResumeTableViewCell.h
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/8.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+#import "MineResumeListModel.h"
+NS_ASSUME_NONNULL_BEGIN
+
+@interface MineResumeTableViewCell : UITableViewCell
+@property (nonatomic, strong) UIImageView *headImgV;
+@property (nonatomic, strong) UILabel *nameLab;
+@property (nonatomic, strong) UILabel *introLab;
+@property (nonatomic, strong) UILabel *moneyLab;
+@property (nonatomic, strong) UILabel *ageLab;
+@property (nonatomic, strong) UILabel *yearLab;
+@property (nonatomic, strong) UILabel *dateLab;
+@property (nonatomic, strong) UIButton *defaultBtn;
+
+@property (nonatomic, strong) MineResumeList *list;
+
+@property (nonatomic, copy) void(^defaultResumeBlock)(UIButton * btn);
+@property (nonatomic, copy) void(^deleteBlock)(void);
+@end
+
+NS_ASSUME_NONNULL_END

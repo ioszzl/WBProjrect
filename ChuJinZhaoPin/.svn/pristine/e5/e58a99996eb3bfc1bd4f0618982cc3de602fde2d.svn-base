@@ -1,0 +1,521 @@
+//
+//  AddResumeViewController.m
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/9.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "AddResumeViewController.h"
+#import "AddResumeView.h"
+#import "ResumeSettingViewController.h"
+#import "AddResumeTableViewCell.h"
+#import "ResumeMineInfoView.h"
+#import "ResumeHeaderView.h"
+#import "ResumJobIntensionTableViewCell.h"
+#import "ResumeExperienceTableViewCell.h"
+#import "ResumeProjectTableViewCell.h"
+#import "ResumeEducationTableViewCell.h"
+#import "ResumeCertificateTableViewCell.h"
+#import "ResumeMineInfoViewController.h"
+#import "JobIntensionViewController.h"
+#import "JobExperienceViewController.h"
+#import "ProjectExperienceViewController.h"
+#import "EducationExperienceViewController.h"
+#import "SkillViewController.h"
+
+#import "ResumInitModel.h"
+@interface AddResumeViewController ()<UITableViewDelegate,UITableViewDataSource>
+@property (nonatomic, strong) UITableView *tableV;
+@property (nonatomic, strong) AddResumeView *addInfoV;
+@property (nonatomic, strong) ResumeMineInfoView *mineInfoV;
+
+@property (nonatomic, strong) ResumInitModel *resumeInitM;
+@end
+
+@implementation AddResumeViewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    [self initUI];
+    
+    
+}
+-(void)viewDidAppear:(BOOL)animated{
+    [super viewDidAppear:animated];
+    [self requestAddOrEditResumeInitData];
+}
+-(void)initUI{
+    self.title = @"简历名称";
+    
+    UIBarButtonItem *item = [[UIBarButtonItem alloc]initWithImage:[UIImage imageNamed:@"我的简历设置"] style:UIBarButtonItemStyleDone target:self action:@selector(doSettingResume)];
+    self.navigationItem.rightBarButtonItem = item;
+    
+  
+    _tableV = [[UITableView alloc]initWithFrame:CGRectZero style:UITableViewStyleGrouped];
+    _tableV.separatorStyle = UITableViewCellSeparatorStyleNone;
+    _tableV.showsVerticalScrollIndicator = NO;
+    _tableV.showsHorizontalScrollIndicator = NO;
+    _tableV.backgroundColor = COLOR_BG;
+    _tableV.dataSource = self;
+    _tableV.delegate = self;
+    [self.view addSubview:self.tableV];
+    [_tableV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.edges.equalTo(self.view);
+    }];
+    _tableV.rowHeight = UITableViewAutomaticDimension;
+    
+    UIView *view = [[UIView alloc]initWithFrame:CGRectMake(0, 0, kScreenWidth, Size(200))];
+    _tableV.tableHeaderView = view;
+    
+    self.addInfoV.hidden = NO;
+    self.mineInfoV.hidden = YES;
+    
+    
+    
+    
+    
+    UIView *tableFooterView = [[UIView alloc]initWithFrame:CGRectMake(0, 0, kScreenWidth, Size(50))];
+    _tableV.tableFooterView = tableFooterView;
+    UIButton *saveBtn = [UIButton ym_ButtonWithFrame:CGRectMake(Size(15), 0,kScreenWidth-Size(30), Size(50)) title:@"发布" backgroundColor:COLOR_MAIN_PERSON titleColor:RGBCOLOR(255, 255, 255) titleSize:Size(18)];
+    saveBtn.layer.cornerRadius = Size(4);
+    [tableFooterView addSubview:saveBtn];
+    [saveBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_offset(Size(15));
+        make.top.mas_offset(0);
+        make.right.mas_offset(-Size(15));
+    }];
+    [saveBtn addTarget:self action:@selector(doSaveBtn) forControlEvents:UIControlEventTouchUpInside];
+    
+}
+-(void)updateTableVHead{
+    self.mineInfoV.nameLab.text = self.resumeInitM.data.tCjResumeDto.tCjUserLoginDto.tCjUserInfoDto.realName;
+    [self.mineInfoV.headImgV sd_setImageWithURL:[NSURL URLWithString:self.resumeInitM.data.tCjResumeDto.tCjUserLoginDto.headPic] placeholderImage:[UIImage imageNamed:@"头像"]];
+    self.mineInfoV.genderLab.text = [self.resumeInitM.data.tCjResumeDto.tCjUserLoginDto.tCjUserInfoDto.sex isEqualToString:@"1"] ? @"女" : @"男";
+    self.mineInfoV.ageLab.text = [NSString stringWithFormat:@"%ld岁",self.resumeInitM.data.tCjResumeDto.tCjUserLoginDto.tCjUserInfoDto.age];
+    self.mineInfoV.educationLab.text = self.resumeInitM.data.tCjResumeDto.tCjUserLoginDto.tCjUserInfoDto.maxEduLevelStr;//@"本科";
+    [self.mineInfoV.phoneBtn setTitle:self.resumeInitM.data.tCjResumeDto.tCjUserLoginDto.tCjUserInfoDto.ceilPhone forState:UIControlStateNormal];
+    [self.mineInfoV.phoneBtn ym_layoutButtonWithEdgeInsetsStyle:MKButtonEdgeInsetsStyleLeft imageTitleSpace:Size(5)];
+    
+    [self.mineInfoV.emailBtn setTitle:self.resumeInitM.data.tCjResumeDto.tCjUserLoginDto.tCjUserInfoDto.email forState:UIControlStateNormal];
+    [self.mineInfoV.emailBtn ym_layoutButtonWithEdgeInsetsStyle:MKButtonEdgeInsetsStyleLeft imageTitleSpace:Size(5)];
+    
+    
+    [self.addInfoV.headImgV sd_setImageWithURL:[NSURL URLWithString:self.resumeInitM.data.tCjResumeDto.tCjUserLoginDto.headPic] placeholderImage:[UIImage imageNamed:@"头像"]];
+}
+
+#pragma mark - request
+-(void)requestAddOrEditResumeInitData{
+    NSMutableDictionary *dataDic = [NSMutableDictionary dictionary];
+    [dataDic setValue:self.resumeId forKey:@"resumeId"];
+    
+    NSMutableDictionary *paramDic = [NSMutableDictionary dictionary];
+    [paramDic setValue:[dataDic mj_JSONString] forKey:@"data"];
+    [paramDic setValue:AppDelegateInstance.token forKey:@"token"];
+    
+    [[RHNetAPIManager sharedManager]appToAddOrEditResumeOPT:paramDic].start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+        if (data) {
+            self.resumeInitM = [ResumInitModel mj_objectWithKeyValues:data];
+            if (self.resumeInitM.data.tCjResumeDto.tCjUserLoginDto.tCjUserInfoDto) {
+                self.mineInfoV.hidden = NO;
+                self.addInfoV.hidden = YES;
+            }
+            [self updateTableVHead];
+            [self.tableV reloadData];
+        }
+    });
+}
+
+#pragma mark - action
+-(void)doSettingResume{
+    ResumeSettingViewController *vc = [ResumeSettingViewController new];
+    vc.resumeId = self.resumeId;
+    [self.navigationController pushViewController:vc animated:YES];
+}
+-(void)doSaveBtn{
+    NSMutableDictionary *dataDic = [NSMutableDictionary dictionary];
+    [dataDic setValue:self.resumeId forKey:@"resumeId"];
+    
+    NSMutableDictionary *paramDic = [NSMutableDictionary dictionary];
+    [paramDic setValue:[dataDic mj_JSONString] forKey:@"data"];
+    [paramDic setValue:AppDelegateInstance.token forKey:@"token"];
+    
+    [[RHNetAPIManager sharedManager]appPushResumeOPT:paramDic].start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+        if (data) {
+            [HUD showHUDError:nil title:@"已发布"];
+            [self.navigationController popViewControllerAnimated:YES];
+        }
+    });
+    
+}
+
+#pragma mark - tableview delegate
+-(NSInteger)numberOfSectionsInTableView:(UITableView *)tableView{
+    return 5;
+}
+-(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section{
+    
+    switch (section) {
+        case 0://求职意向
+            return 1;
+        case 1:{//工作经验
+            if (self.resumeInitM.data.tCjResumeDto.resumeWorkExperienceList.count == 0) {
+                return 1;
+            }
+            return self.resumeInitM.data.tCjResumeDto.resumeWorkExperienceList.count;
+        }
+        case 2:{//项目经验
+            if (self.resumeInitM.data.tCjResumeDto.resumeProjectExperienceList.count == 0) {
+                return 1;
+            }
+            return self.resumeInitM.data.tCjResumeDto.resumeProjectExperienceList.count;
+        }
+        case 3:{//教育经历
+            if (self.resumeInitM.data.tCjResumeDto.resumeEduExperienceList.count == 0) {
+                return 1;
+            }
+            return self.resumeInitM.data.tCjResumeDto.resumeEduExperienceList.count;
+        }
+        case 4:{//技能证书
+            if (self.resumeInitM.data.tCjResumeDto.resumeSkillPointList.count == 0) {
+                return 1;
+            }
+            return self.resumeInitM.data.tCjResumeDto.resumeSkillPointList.count;
+        }
+        default:
+            break;
+    }
+   
+    
+    return 1;
+}
+-(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
+    
+    switch (indexPath.section) {
+        case 0:{//求职意向
+            if (!self.resumeInitM.data.tCjResumeDto.positionLocationId) {
+                CELL_DEFINE(AddResumeTableViewCell);
+                [cell.addBtn setTitle:@"求职意向+" forState:UIControlStateNormal];
+                cell.addBtnBlock = ^(UIButton * _Nonnull btn) {
+                    JobIntensionViewController *vc = [JobIntensionViewController new];
+                    vc.dataSourceM = self.resumeInitM.data.tCjResumeDto;
+                    vc.addResumeBlock = ^(NSString * _Nonnull resumeId) {
+                        self.resumeId = resumeId;
+                    };
+                    [self.navigationController pushViewController:vc animated:YES];
+                };
+                return cell;
+            }
+            CELL_DEFINE(ResumJobIntensionTableViewCell);
+            cell.moneyLab.text = self.resumeInitM.data.tCjResumeDto.wantSalary;  //@"8000-10000元/月";
+            cell.locationLab.text = self.resumeInitM.data.tCjResumeDto.positionLocationdes;//@"深圳";
+            cell.positionLab.text = self.resumeInitM.data.tCjResumeDto.workPosition;//@"产品专员";
+            cell.tradeLab.text = self.resumeInitM.data.tCjResumeDto.workClassName;//@"互联网/电子商务";
+            cell.tagsLab.text = self.resumeInitM.data.tCjResumeDto.personDesCard;//@"Asure Visio Xmind";
+            cell.evaluationLab.text = self.resumeInitM.data.tCjResumeDto.selfEvaluate;//@"哈哈哈哈哈哈哈啥哈哈哈哈哈哈哈哈哈哈哈啊更好嘎嘎嘎嘎哈哈哈哈哈哈嘎嘎嘎嘎嘎嘎阿嘎嘎嘎个渐进色哈哈哈啊嘎嘎嘎嘎嘎嘎阿哥";
+            if ([self.resumeInitM.data.tCjResumeDto.jobType isEqualToString:@"0"]) {
+                cell.jobTypeLab.text = @"全职";
+            }else if ([self.resumeInitM.data.tCjResumeDto.jobType isEqualToString:@"1"]){
+                cell.jobTypeLab.text = @"兼职";
+            }
+            cell.editBtnBlock = ^{
+                JobIntensionViewController *vc = [JobIntensionViewController new];
+                vc.dataSourceM = self.resumeInitM.data.tCjResumeDto;
+                [self.navigationController pushViewController:vc animated:YES];
+            };
+            return cell;
+        }
+            break;
+        case 1:{//工作经验
+            if (self.resumeInitM.data.tCjResumeDto.resumeWorkExperienceList.count == 0){
+                CELL_DEFINE(AddResumeTableViewCell);
+                [cell.addBtn setTitle:@"工作经验+" forState:UIControlStateNormal];
+                cell.addBtnBlock = ^(UIButton * _Nonnull btn) {
+                    JobExperienceViewController *vc = [JobExperienceViewController new];
+                    if (self.resumeId) {
+                        vc.resumeId = self.resumeId;
+                    }
+                    vc.addResumeBlock = ^(NSString * _Nonnull resumeId) {
+                        self.resumeId = resumeId;
+                    };
+                    [self.navigationController pushViewController:vc animated:YES];
+                };
+                return cell;
+            }
+            
+            CELL_DEFINE(ResumeExperienceTableViewCell);
+            ResumInitResumeWorkExperienceList *list = self.resumeInitM.data.tCjResumeDto.resumeWorkExperienceList[indexPath.row];
+            cell.list = list;
+            cell.editBtnBlock = ^{
+                JobExperienceViewController *vc = [JobExperienceViewController new];
+                vc.resumeId = NSStringFromInteger(list.resumeId);
+                vc.jobId = NSStringFromInteger(list.ID);
+                [self.navigationController pushViewController:vc animated:YES];
+            };
+            return cell;
+        }
+            break;
+        case 2:{//项目经验
+            if (self.resumeInitM.data.tCjResumeDto.resumeProjectExperienceList.count == 0){
+                CELL_DEFINE(AddResumeTableViewCell);
+                [cell.addBtn setTitle:@"项目经验+" forState:UIControlStateNormal];
+                cell.addBtnBlock = ^(UIButton * _Nonnull btn) {
+                    ProjectExperienceViewController *vc = [ProjectExperienceViewController new];
+                    if (self.resumeId) {
+                        vc.resumeId = self.resumeId;
+                    }
+                    vc.addResumeBlock = ^(NSString * _Nonnull resumeId) {
+                        self.resumeId = resumeId;
+                    };
+                    [self.navigationController pushViewController:vc animated:YES];
+                };
+                return cell;
+            }
+            CELL_DEFINE(ResumeProjectTableViewCell);
+            ResumInitResumeProjectExperienceList *list = self.resumeInitM.data.tCjResumeDto.resumeProjectExperienceList[indexPath.row];
+            cell.nameLab.text = list.proName;//@"O2O书店平台";
+            cell.companyLab.text = list.locCompany;
+            cell.dateLab.text = [NSString stringWithFormat:@"%@-%@",[[NSDate dateWithTimeIntervalSince1970:list.startTime/1000] stringWithFormat:@"yyyy/MM"], [[NSDate dateWithTimeIntervalSince1970:list.endTime/1000] stringWithFormat:@"yyyy/MM"]];//@"2017/7-2018/8";
+            cell.contenLab.text = list.proDescrib;//@"和时代感和哈哈哈哈哈哈哈哈哈啥哈哈少时诵诗书所哈哈哈哈哈哈咔咔咔咔咔咔解决解决军军啊啊啊啊啊啊啊啊啊啊啊";
+            if (indexPath.row == self.resumeInitM.data.tCjResumeDto.resumeProjectExperienceList.count-1) {
+                cell.hiddenLine = YES;
+            }else{
+                cell.hiddenLine = NO;
+            }
+            cell.editBtnBlock = ^{
+                ProjectExperienceViewController *vc = [ProjectExperienceViewController new];
+                vc.resumeId = NSStringFromInteger(list.resumeId);
+                vc.projectId = NSStringFromInteger(list.ID);
+                [self.navigationController pushViewController:vc animated:YES];
+            };
+            return cell;
+        }
+            break;
+        case 3:{//教育经历
+            if (self.resumeInitM.data.tCjResumeDto.resumeEduExperienceList.count == 0){
+                CELL_DEFINE(AddResumeTableViewCell);
+                [cell.addBtn setTitle:@"教育经历+" forState:UIControlStateNormal];
+                cell.addBtnBlock = ^(UIButton * _Nonnull btn) {
+                    EducationExperienceViewController *vc = [EducationExperienceViewController new];
+                    if (self.resumeId) {
+                        vc.resumeId = self.resumeId;
+                    }
+                    vc.addResumeBlock = ^(NSString * _Nonnull resumeId) {
+                        self.resumeId = resumeId;
+                    };
+                    [self.navigationController pushViewController:vc animated:YES];
+                };
+                return cell;
+            }
+            CELL_DEFINE(ResumeEducationTableViewCell);
+            ResumInitResumeEduExperienceList *list = self.resumeInitM.data.tCjResumeDto.resumeEduExperienceList[indexPath.row];
+            cell.dateLab.text = [NSString stringWithFormat:@"%@-%@",[[NSDate dateWithTimeIntervalSince1970:list.startTime/1000] stringWithFormat:@"yyyy/MM"], [[NSDate dateWithTimeIntervalSince1970:list.endTime/1000] stringWithFormat:@"yyyy/MM"]];//@"2015/9-2018/6";
+            cell.contentLab.text = [NSString stringWithFormat:@"%@  %@  %@",list.school, list.major, [AppDelegateInstance educationNameWithID:list.educationLevel]];//@"湖南理工大学  软件工程  本科";
+            cell.editBtnBlock = ^{
+                EducationExperienceViewController *vc = [EducationExperienceViewController new];
+                vc.eduId = NSStringFromInteger(list.ID);
+                vc.resumeId = NSStringFromInteger(list.resumeId);
+                [self.navigationController pushViewController:vc animated:YES];
+            };
+            return cell;
+        }
+            break;
+        case 4:{//技能证书
+            if (self.resumeInitM.data.tCjResumeDto.resumeSkillPointList.count == 0){
+                CELL_DEFINE(AddResumeTableViewCell);
+                [cell.addBtn setTitle:@"技能证书+" forState:UIControlStateNormal];
+                cell.addBtnBlock = ^(UIButton * _Nonnull btn) {
+                    SkillViewController *vc = [SkillViewController new];
+                    if (self.resumeId) {
+                        vc.resumeId = self.resumeId;
+                    }
+                    vc.addResumeBlock = ^(NSString * _Nonnull resumeId) {
+                        self.resumeId = resumeId;
+                    };
+                    [self.navigationController pushViewController:vc animated:YES];
+                };
+                return cell;
+            }
+            CELL_DEFINE(ResumeCertificateTableViewCell);
+            NSMutableArray *temp = [NSMutableArray array];
+            for (ResumInitResumeSkillPointList *list in self.resumeInitM.data.tCjResumeDto.resumeSkillPointList) {
+                [temp addObjectsFromArray:[list.skillName componentsSeparatedByString:@","]];
+                [temp addObjectsFromArray:[list.credential componentsSeparatedByString:@","]];
+            }
+            cell.certificateArr = [temp copy];//@[@"CET4", @"C语言二级",@"C语言二级",@"C语言二级"];
+            return cell;
+        }
+            break;
+        default:
+            break;
+    }
+    CELL_DEFINE(ResumJobIntensionTableViewCell);
+    return cell;
+    
+    
+}
+//-(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath{
+//    if (_edit) {
+//        ResumJobIntensionTableViewCell *cell = (ResumJobIntensionTableViewCell *)[self tableView:tableView cellForRowAtIndexPath:indexPath];
+//        return cell.cellH;
+//    }else{
+//        return Size(232/2+10);
+//    }
+//}
+-(UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section{
+    UIView *view = [[UIView alloc]initWithFrame:CGRectMake(0, 0, kScreenWidth, Size(44))];
+    
+    ResumeHeaderView *headV = [[ResumeHeaderView alloc]init];
+    headV.frame = CGRectMake(Size(15), 0, kScreenWidth-Size(30), Size(44));
+    UIBezierPath *maskPath = [UIBezierPath bezierPathWithRoundedRect:headV.bounds byRoundingCorners:(UIRectCornerTopLeft | UIRectCornerTopRight) cornerRadii:CGSizeMake(Size(5),Size(5))];//圆角大小
+    CAShapeLayer *maskLayer = [[CAShapeLayer alloc] init];
+    maskLayer.frame = headV.bounds;
+    maskLayer.path = maskPath.CGPath;
+    headV.layer.mask = maskLayer;
+    [view addSubview:headV];
+    
+    
+    [headV.addBtn setImage:[UIImage imageNamed:@"职位详情++"] forState:(UIControlState)UIControlStateNormal];
+    
+    
+    switch (section) {
+        case 0:{
+            
+            headV.addBtn.hidden = YES;
+            headV.titleLab.text = @"求职意向";
+            
+        }
+            break;
+        case 1:{
+            if (self.resumeInitM.data.tCjResumeDto.resumeWorkExperienceList.count == 0) {
+                headV.addBtn.hidden = YES;
+            }else{
+                headV.addBtn.hidden = NO;
+            }
+            headV.titleLab.text = @"工作经验";
+            headV.addBtnBlock = ^{
+                JobExperienceViewController *vc = [JobExperienceViewController new];
+                vc.resumeId = self.resumeId;
+                [self.navigationController pushViewController:vc animated:YES];
+            };
+        }
+            break;
+        case 2:{
+            if (self.resumeInitM.data.tCjResumeDto.resumeProjectExperienceList.count == 0) {
+                headV.addBtn.hidden = YES;
+            }else{
+                headV.addBtn.hidden = NO;
+            }
+            headV.titleLab.text = @"项目经验";
+            headV.addBtnBlock = ^{
+                ProjectExperienceViewController *vc = [ProjectExperienceViewController new];
+                vc.resumeId = self.resumeId;
+                [self.navigationController pushViewController:vc animated:YES];
+            };
+        }
+            break;
+        case 3:{
+            if (self.resumeInitM.data.tCjResumeDto.resumeEduExperienceList.count == 0) {
+                headV.addBtn.hidden = YES;
+            }else{
+                headV.addBtn.hidden = NO;
+            }
+            headV.titleLab.text = @"教育经历";
+            headV.addBtnBlock = ^{
+                EducationExperienceViewController *vc = [EducationExperienceViewController new];
+                vc.resumeId = self.resumeId;
+                [self.navigationController pushViewController:vc animated:YES];
+            };
+        }
+            break;
+        case 4:{
+            if (self.resumeInitM.data.tCjResumeDto.resumeSkillPointList.count == 0) {
+                headV.addBtn.hidden = YES;
+            }else{
+                headV.addBtn.hidden = NO;
+            }
+            headV.titleLab.text = @"技能证书";
+            [headV.addBtn setImage:[UIImage imageNamed:@"编辑"] forState:(UIControlState)UIControlStateNormal];
+            headV.addBtnBlock = ^{
+                SkillViewController *vc = [SkillViewController new];
+                
+                if (self.resumeInitM.data.tCjResumeDto.resumeSkillPointList.count > 0) {
+                    vc.skillId = NSStringFromInteger(self.resumeInitM.data.tCjResumeDto.resumeSkillPointList.firstObject.ID);
+                    vc.resumeId = NSStringFromInteger(self.resumeInitM.data.tCjResumeDto.resumeSkillPointList.firstObject.resumeId);;
+                }
+                
+                [self.navigationController pushViewController:vc animated:YES];
+            };
+        }
+            break;
+        default:
+            break;
+    }
+    
+    
+    return view;
+}
+-(CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section{
+    return Size(44);
+}
+-(UIView *)tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section{
+    return [UIView new];
+}
+-(CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section{
+    
+    return Size(10);
+}
+#pragma mark - 懒加载
+-(ResumeMineInfoView *)mineInfoV{
+    if (!_mineInfoV) {
+        _mineInfoV = [[ResumeMineInfoView alloc]init];
+        _mineInfoV.layer.cornerRadius = Size(5);
+        [self.tableV.tableHeaderView addSubview:_mineInfoV];
+        [_mineInfoV mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.left.top.mas_offset(Size(15));
+            make.right.mas_offset(-Size(15));
+            make.bottom.mas_offset(-Size(10));
+        }];
+        
+        WEAKSELF;
+        _mineInfoV.editInfoBlock = ^{
+            ResumeMineInfoViewController *vc = [ResumeMineInfoViewController new];
+            vc.ID = NSStringFromInteger(weakSelf.resumeInitM.data.tCjResumeDto.tCjUserLoginDto.tCjUserInfoDto.ID);
+            vc.resumeId = weakSelf.resumeId;
+            [weakSelf.navigationController pushViewController:vc animated:YES];
+        };
+    }
+    return _mineInfoV;
+}
+-(AddResumeView *)addInfoV{
+    if (!_addInfoV) {
+        _addInfoV = [[AddResumeView alloc] init];
+        _addInfoV.layer.cornerRadius = Size(5);
+        [self.tableV.tableHeaderView addSubview:_addInfoV];
+        [_addInfoV mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.left.top.mas_offset(Size(15));
+            make.right.mas_offset(-Size(15));
+            make.bottom.mas_offset(-Size(10));
+        }];
+        
+        WEAKSELF;
+        _addInfoV.editInfoBlock = ^{
+            ResumeMineInfoViewController *vc = [ResumeMineInfoViewController new];
+            [weakSelf.navigationController pushViewController:vc animated:YES];
+        };
+    }
+    return _addInfoV;
+}
+/*
+#pragma mark - Navigation
+
+// In a storyboard-based application, you will often want to do a little preparation before navigation
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
+    // Get the new view controller using [segue destinationViewController].
+    // Pass the selected object to the new view controller.
+}
+*/
+
+@end

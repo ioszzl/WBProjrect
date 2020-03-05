@@ -1,0 +1,26 @@
+//
+//  MessageListModel.m
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/22.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "MessageListModel.h"
+
+@implementation MessageListModel
+
+@end
+@implementation MessageList
+
+@end
+@implementation MessageListPageInfo
++(NSDictionary *)mj_objectClassInArray{
+    return @{@"list":[MessageList class]};
+}
+@end
+
+
+@implementation MessageListData
+
+@end

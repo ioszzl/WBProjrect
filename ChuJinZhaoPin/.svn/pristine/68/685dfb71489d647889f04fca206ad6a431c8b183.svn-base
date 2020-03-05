@@ -1,0 +1,432 @@
+//
+//  NearbyJobListViewController.m
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/8.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "NearbyJobListViewController.h"
+#import "HomeJobListTableViewCell.h"
+#import "ChoseTradeViewController.h"
+#import "CLAlertView.h"
+#import "JobDetailViewController.h"
+#import "FilterModel.h"
+#import <CoreLocation/CoreLocation.h>
+#import "HtmlViewController.h"
+@interface NearbyJobListViewController ()<UITableViewDelegate,UITableViewDataSource,CLLocationManagerDelegate>{
+    NSInteger _pageNum;
+    NSDictionary *_filterTradeDic;
+    NSInteger _fliterEduIndex;
+    NSInteger _fliterWorkIndex;
+    NSInteger _fliterSalaIndex;
+    
+    NSString *_companyAddress;
+    
+    BOOL isLocation;
+}
+@property (nonatomic, strong) UITableView *tableV;
+@property (nonatomic, strong) NSArray<HomeIndexList *> *dataSource;
+
+@property (nonatomic, strong) NSMutableDictionary *paramDataDic;
+
+@property (nonatomic, strong) UIView *siftView;
+
+@property (nonatomic, strong) FilterModel *model;
+
+@property (nonatomic, strong) NSMutableArray *workArr;
+@property (nonatomic, strong) NSMutableArray *salaArr;
+@property (nonatomic, strong) NSMutableArray *eduArr;
+
+@property (nonatomic, strong) CLLocationManager *locationManager;//定位服务管理类
+@end
+
+@implementation NearbyJobListViewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    
+    _locationManager = [[CLLocationManager alloc] init];
+    [_locationManager requestWhenInUseAuthorization];
+    //[_locationManager requestAlwaysAuthorization];//iOS8必须，这两行必须有一行执行，否则无法获取位置信息，和定位
+    // 设置定位精确度到米
+    _locationManager.desiredAccuracy = kCLLocationAccuracyBest;
+    // 设置过滤器为无
+    _locationManager.distanceFilter = kCLDistanceFilterNone;
+    // 设置代理
+    _locationManager.delegate = self;
+    
+    [self initUI];
+    
+    _pageNum = 1;
+    [self requestListData];
+    [self requestFliterData];
+    
+//    [self.suspendedBtn setImage:[UIImage imageNamed:@"客服"] forState:UIControlStateNormal];
+//    [self showSuspendedBtn:^(UIButton *btn) {
+//        
+//    }];
+}
+-(void)initUI{
+    self.title = @"附近职位";
+    UIButton *siftBtn = [UIButton ym_ButtonWithFrame:CGRectMake(0, 0, Size(108/2), Size(38/2)) title:@"筛选" backgroundColor:nil titleColor:RGBCOLOR(255, 255, 255) titleSize:Size(13)];
+    [siftBtn setImage:[UIImage imageNamed:@"xia"] forState:UIControlStateNormal];
+    [siftBtn addTarget:self action:@selector(doSiftBtn) forControlEvents:UIControlEventTouchUpInside];
+    UIBarButtonItem *item = [[UIBarButtonItem alloc]initWithCustomView:siftBtn];
+    self.navigationItem.rightBarButtonItem = item;
+    [siftBtn ym_layoutButtonWithEdgeInsetsStyle:MKButtonEdgeInsetsStyleRight imageTitleSpace:Size(9)];
+    
+    _siftView = [UIView new];
+    _siftView.backgroundColor = RGBCOLOR(255, 255, 255);
+    _siftView.hidden = YES;
+    [self.view addSubview:_siftView];
+    [_siftView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.right.mas_offset(0);
+        make.top.mas_offset(-Size(50 + 10));
+        make.height.mas_equalTo(Size(50));
+    }];
+    
+    NSArray *arr = @[@"行业",@"学历",@"工作经验",@"薪资"];
+    for (int i = 0; i<arr.count; i++) {
+        UIButton *btn = [UIButton ym_ButtonWithFrame:CGRectZero title:arr[i] backgroundColor:nil titleColor:COLOR_RGB_102 titleSize:Size(13)];
+        [btn setImage:[UIImage imageNamed:@"附近职位-箭头"] forState:UIControlStateNormal];
+        [_siftView addSubview:btn];
+        [btn mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.left.mas_offset(kScreenWidth/4*i);
+            make.top.bottom.mas_offset(0);
+            make.width.mas_equalTo(kScreenWidth/4);
+        }];
+        [btn ym_layoutButtonWithEdgeInsetsStyle:MKButtonEdgeInsetsStyleRight imageTitleSpace:Size(10)];
+        [btn addTarget:self action:@selector(doSiftTypeBtn:) forControlEvents:UIControlEventTouchUpInside];
+        
+        if (i != arr.count-1) {
+            UIView *line = [UIView new];
+            line.backgroundColor = COLOR_RGB_line;
+            [_siftView addSubview:line];
+            [line mas_makeConstraints:^(MASConstraintMaker *make) {
+                make.width.mas_equalTo(0.6);
+                make.height.mas_equalTo(Size(10));
+                make.right.equalTo(btn);
+                make.centerY.mas_equalTo(btn);
+            }];
+        }
+        
+    }
+    
+    
+   
+    _tableV = [[UITableView alloc]initWithFrame:CGRectZero style:UITableViewStylePlain];
+    _tableV.tableFooterView = [UIView new];
+    _tableV.separatorStyle = UITableViewCellSeparatorStyleNone;
+    _tableV.showsVerticalScrollIndicator = NO;
+    _tableV.showsHorizontalScrollIndicator = NO;
+    _tableV.backgroundColor = COLOR_BG;
+    _tableV.dataSource = self;
+    _tableV.delegate = self;
+    [self.view addSubview:_tableV];
+    [_tableV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.right.bottom.mas_offset(0);
+        make.top.equalTo(_siftView.mas_bottom).mas_offset(Size(10));
+    }];
+    _tableV.rowHeight = Size(262/2+5);
+    _tableV.mj_header = [YMRefreshHeader ym_headerWithRefreshingsBlock:^{
+        _pageNum = 1;
+        [self requestListData];
+    } animated:NO];
+    _tableV.mj_footer = [YMRefreshFooter ym_footerWithRefreshingsBlock:^{
+        _pageNum++;
+        [self requestListData];
+    } animated:NO];
+}
+#pragma mark - request
+-(void)requestListData{
+    
+    [self.paramDataDic setValue:@"1" forKey:@"type"];////0:全部职位,1:附近职位,2:高薪职位(必填,app传0就可以了)
+    
+    NSMutableDictionary *page = [NSMutableDictionary dictionary];
+    [page setValue:@(_pageNum) forKey:@"currPage"];
+    [page setValue:@10 forKey:@"pageSize"];
+    
+    NSMutableDictionary *paramDic = [NSMutableDictionary dictionary];
+    [paramDic setValue:[self.paramDataDic mj_JSONString] forKey:@"data"];
+    [paramDic setValue:[page mj_JSONString] forKey:@"page"];
+    [paramDic setObject:AppDelegateInstance.token forKey:@"token"];
+    
+    [[RHNetAPIManager sharedManager]appPostsSearchOPT:paramDic].start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+        if (data) {
+            HomeIndexListModel *model = [HomeIndexListModel mj_objectWithKeyValues:data];
+            if (model.data.list.count == 0) {
+                [HUD showHUDError:nil title:@"暂无数据"];
+            }
+            if (_pageNum == 1) {
+                self.dataSource = model.data.list;
+                [self.tableV.mj_header endRefreshing];
+                [self.tableV.mj_footer resetNoMoreData];
+            }else{
+                NSMutableArray *temp = [NSMutableArray arrayWithArray:self.dataSource];
+                [temp addObjectsFromArray:model.data.list];
+                self.dataSource = [temp copy];
+            }
+            if (model.data.isLastPage) {
+                [self.tableV.mj_footer endRefreshingWithNoMoreData];
+            }else{
+                [self.tableV.mj_footer endRefreshing];
+            }
+            
+            [self.tableV reloadData];
+            
+        }else{
+            [self.tableV.mj_header endRefreshing];
+            [self.tableV.mj_footer endRefreshing];
+        }
+    });
+}
+-(void)requestFliterData{
+    [[RHNetAPIManager sharedManager]appSearchCriteriaOPT].start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+        if (data) {
+           self.model = [FilterModel mj_objectWithKeyValues:data];
+            
+            Scale *scal = [Scale new];
+            scal.ID = -1;
+            scal.value = @"全部";
+            
+            NSMutableArray *temp = [NSMutableArray arrayWithArray:self.model.data.eduLevel];
+            [temp insertObject:scal atIndex:0];
+            self.model.data.eduLevel = temp;
+            
+            NSMutableArray *temp1 = [NSMutableArray arrayWithArray:self.model.data.companyWorkYear];
+            [temp1 insertObject:scal atIndex:0];
+            self.model.data.companyWorkYear = temp1;
+            
+            NSMutableArray *temp2 = [NSMutableArray arrayWithArray:self.model.data.userWorkYear];
+            [temp2 insertObject:scal atIndex:0];
+            self.model.data.userWorkYear = temp2;
+            
+            NSMutableArray *temp3 = [NSMutableArray arrayWithArray:self.model.data.salary];
+            [temp3 insertObject:scal atIndex:0];
+            self.model.data.salary = temp3;
+            
+            for (Scale *s in self.model.data.userWorkYear) {
+                [self.workArr addObject:s.value];
+            }
+            for (Scale *s in self.model.data.eduLevel) {
+                [self.eduArr addObject:s.value];
+            }
+            for (Scale *s in self.model.data.salary) {
+                [self.salaArr addObject:s.value];
+            }
+           
+        }
+    });
+}
+#pragma mark - action
+-(void)doSiftBtn{
+    self.siftView.hidden = !self.siftView.hidden;
+    if (self.siftView.hidden == NO) {
+        [UIView animateWithDuration:.2 animations:^{
+            [self.siftView mas_updateConstraints:^(MASConstraintMaker *make) {
+                make.top.mas_offset(Size(5));
+            }];
+            [self.view layoutIfNeeded];//强制绘制
+        }];
+        
+    }else{
+        [UIView animateWithDuration:0.2 animations:^{
+            [self.siftView mas_updateConstraints:^(MASConstraintMaker *make) {
+                make.top.mas_offset(-Size(50+10));
+            }];
+            [self.view layoutIfNeeded];//强制绘制
+        }];
+    }
+    
+   
+}
+-(void)doSiftTypeBtn:(UIButton *)btn{
+    if ([btn.titleLabel.text isEqualToString:@"行业"]) {
+        
+        ChoseTradeViewController *vc = [ChoseTradeViewController new];
+        vc.defaultDic = [_filterTradeDic mutableCopy];
+        WEAKSELF;
+        vc.tradeSelectedBlock = ^(NSDictionary * _Nonnull tradeDic) {
+            _filterTradeDic = tradeDic;
+            NSMutableArray *temp = [NSMutableArray array];
+            for (Children *c in tradeDic[@"tradeArr"]) {
+                [temp addObject:NSStringFromInteger(c.value)];
+            }
+            
+            [weakSelf.paramDataDic setValue:[temp componentsJoinedByString:@","] forKey:@"industryClassId"];
+            _pageNum = 1;
+            [weakSelf requestListData];
+        };
+        [self.navigationController pushViewController:vc animated:YES];
+        
+    }else if ([btn.titleLabel.text isEqualToString:@"学历"]){
+        CLAlertView *alert = [CLAlertView globeBottomView];
+        alert.title = @"学历";
+        alert.colorStr = COLOR_MAIN;
+        alert.hlightButton = _fliterEduIndex;
+        alert.titleArray = self.eduArr;
+        alert.globeBottomView = ^(NSInteger index, NSString *string) {
+            //NSLog(@"%@",string);
+            _fliterEduIndex = index;
+            Scale *s = self.model.data.eduLevel[index];
+            [self.paramDataDic setValue:s.ID == -1 ? @"" : NSStringFromInteger(s.ID) forKey:@"educationLevel"];
+            
+            _pageNum = 1;
+            [self requestListData];
+        };
+        [alert show];
+    }else if ([btn.titleLabel.text isEqualToString:@"工作经验"]){
+        CLAlertView *alert = [CLAlertView globeBottomView];
+        alert.title = @"工作经验";
+        alert.colorStr = COLOR_MAIN;
+        alert.hlightButton = _fliterWorkIndex;
+        alert.titleArray = self.workArr;
+        alert.globeBottomView = ^(NSInteger index, NSString *string) {
+            //NSLog(@"%@",string);
+            _fliterWorkIndex = index;
+            Scale *s = self.model.data.userWorkYear[index];
+            [self.paramDataDic setValue:s.ID == -1 ? @"" : NSStringFromInteger(s.ID) forKey:@"workYear"];
+            
+            _pageNum = 1;
+            [self requestListData];
+        };
+        [alert show];
+        
+    }else if ([btn.titleLabel.text isEqualToString:@"薪资"]){
+        CLAlertView *alert = [CLAlertView globeBottomView];
+        alert.title = @"薪资";
+        alert.colorStr = COLOR_MAIN;
+        alert.hlightButton = _fliterSalaIndex;
+        alert.titleArray = self.salaArr;
+        alert.globeBottomView = ^(NSInteger index, NSString *string) {
+            //NSLog(@"%@",string);
+            _fliterSalaIndex = index;
+            Scale *s = self.model.data.salary[index];
+            [self.paramDataDic setValue:s.ID == -1 ? @"" : NSStringFromInteger(s.ID) forKey:@"salaryRangeId"];
+            
+            _pageNum = 1;
+            [self requestListData];
+        };
+        [alert show];
+    }
+        
+}
+
+#pragma mark - tableview delegate
+-(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section{
+    return self.dataSource.count;
+}
+-(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
+    CELL_DEFINE(HomeJobListTableViewCell);
+    cell.addressBtn.hidden = NO;
+    cell.meterLab.hidden = NO;
+    cell.model = self.dataSource[indexPath.row];
+    WEAKSELF;
+    cell.addressBtnBlock = ^(UIButton * _Nonnull btn) {
+        _companyAddress = btn.titleLabel.text;
+        isLocation = YES;
+        if([weakSelf.locationManager respondsToSelector:@selector(requestWhenInUseAuthorization)]){
+            
+            [weakSelf.locationManager requestWhenInUseAuthorization];
+        }
+        
+        [weakSelf.locationManager startUpdatingLocation];   //开始定位
+    
+    };
+    
+    return cell;
+}
+-(void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath{
+    JobDetailViewController *vc = [JobDetailViewController new];
+    vc.postID = NSStringFromInteger(self.dataSource[indexPath.row].ID);
+    vc.companyID = NSStringFromInteger(self.dataSource[indexPath.row].company_id);
+    [self.navigationController pushViewController:vc animated:YES];
+}
+
+#pragma mark - 定位 位置 delegate
+/* 定位完成后 回调 */
+-(void)locationManager:(CLLocationManager *)manager didUpdateLocations:(NSArray<CLLocation *> *)locations{
+    
+    CLLocation *location = [locations lastObject];
+    
+    CLLocationCoordinate2D coordinate = location.coordinate;
+    //  经纬度
+    NSLog(@"---x:%f---y:%f",coordinate.latitude,coordinate.longitude);
+    
+    [manager stopUpdatingLocation];   //停止定位
+    
+    if (isLocation) {
+        isLocation = NO;
+        
+        NSMutableDictionary *dataDic = [NSMutableDictionary dictionary];
+        [dataDic setValue:[NSString stringWithFormat:@"%f",coordinate.latitude] forKey:@"lat"];
+        [dataDic setValue:[NSString stringWithFormat:@"%f",coordinate.longitude] forKey:@"lng"];
+        [dataDic setValue:_companyAddress forKey:@"companyAddress"];
+        
+        NSMutableDictionary *paramDic = [NSMutableDictionary dictionary];
+        [paramDic setValue:[dataDic mj_JSONString] forKey:@"data"];
+        
+        [[RHNetAPIManager sharedManager]appGetBaiduMapUrlOPT:paramDic].start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+            if (data) {
+                if (data[@"data"]) {
+                    HtmlViewController *vc = [HtmlViewController new];
+                    vc.urlString = data[@"data"];
+                    vc.title = @"地图";
+                    [self.navigationController pushViewController:vc animated:YES];
+                }
+            }
+            
+        });
+    }
+    
+}
+
+/* 定位失败后 回调 */
+-(void)locationManager:(CLLocationManager *)manager didFailWithError:(NSError *)error{
+    
+    if (error.code == kCLErrorDenied) {
+        // 提示用户出错
+    }
+}
+
+
+#pragma mark - 懒加载
+-(NSMutableDictionary *)paramDataDic{
+    if (!_paramDataDic) {
+        _paramDataDic = [NSMutableDictionary dictionary];
+    }
+    return _paramDataDic;
+}
+-(NSMutableArray *)workArr{
+    if (!_workArr) {
+        _workArr = [NSMutableArray array];
+    }
+    return _workArr;
+}
+
+-(NSMutableArray *)eduArr{
+    if (!_eduArr) {
+        _eduArr = [NSMutableArray array];
+    }
+    return _eduArr;
+}
+-(NSMutableArray *)salaArr{
+    if (!_salaArr) {
+        _salaArr = [NSMutableArray array];
+    }
+    return _salaArr;
+}
+/*
+#pragma mark - Navigation
+
+// In a storyboard-based application, you will often want to do a little preparation before navigation
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
+    // Get the new view controller using [segue destinationViewController].
+    // Pass the selected object to the new view controller.
+}
+*/
+
+@end

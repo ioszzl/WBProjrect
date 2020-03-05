@@ -1,0 +1,165 @@
+//
+//  PositionContentViewController.m
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/14.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "PositionContentViewController.h"
+#import "YMTextView.h"
+@interface PositionContentViewController ()
+@property (nonatomic, strong) YMTextView *contentTextV;
+@property (nonatomic, strong) YMTextView *timeTextV;
+@property (nonatomic, strong) YMTextView *wayTextV;
+@end
+
+@implementation PositionContentViewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    [self initUI];
+}
+-(void)initUI{
+    self.title = @"岗位说明";
+    
+    UIBarButtonItem *item = [[UIBarButtonItem alloc]initWithTitle:@"保存" style:UIBarButtonItemStyleDone target:self action:@selector(doSaveItem)];
+    self.navigationItem.rightBarButtonItem = item;
+    
+    UIScrollView *scrollV = [UIScrollView new];
+    [self.view addSubview:scrollV];
+    [scrollV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.edges.equalTo(self.view);
+    }];
+    
+    UIView *contentV = [UIView new];
+    contentV.backgroundColor = RGBCOLOR(255, 255, 255);
+    [scrollV addSubview:contentV];
+    [contentV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.right.mas_offset(0);
+        make.top.mas_offset(Size(10));
+        make.width.mas_equalTo(kScreenWidth);
+        make.height.mas_equalTo(Size(294/2));
+    }];
+    
+    UILabel *contentLab = [UILabel ym_labelWithFrame:CGRectZero font:FONT_SIZE_15 textColor:COLOR_RGB_51];
+    contentLab.text = @"工作内容";
+    [contentV addSubview:contentLab];
+    [contentLab mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.top.mas_offset(Size(15));
+    }];
+    _contentTextV = [YMTextView new];
+    _contentTextV.placeholder = @"请填写工作内容";
+    _contentTextV.font = FONT_SIZE_15;
+    _contentTextV.textColor = COLOR_RGB_153;
+    [contentV addSubview:_contentTextV];
+    [_contentTextV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_offset(Size(15));
+        make.top.equalTo(contentLab.mas_bottom).mas_offset(Size(15));
+        make.right.bottom.mas_offset(-Size(15));
+    }];
+    
+    UIView *timeV = [UIView new];
+    timeV.backgroundColor = RGBCOLOR(255, 255, 255);
+    [scrollV addSubview:timeV];
+    [timeV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.right.mas_offset(0);
+        make.top.equalTo(contentV.mas_bottom).mas_offset(Size(10));
+        make.height.mas_offset(Size(294/2));
+    }];
+    
+    UILabel *timeLab = [UILabel ym_labelWithFrame:CGRectZero font:FONT_SIZE_15 textColor:COLOR_RGB_51];
+    timeLab.text = @"工作时间";
+    [timeV addSubview:timeLab];
+    [timeLab mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.top.mas_offset(Size(15));
+    }];
+    _timeTextV = [YMTextView new];
+    _timeTextV.placeholder = @"请填写工作时间";
+    _timeTextV.font = FONT_SIZE_15;
+    _contentTextV.textColor = COLOR_RGB_153;
+    [timeV addSubview:_timeTextV];
+    [_timeTextV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_offset(Size(15));
+        make.top.equalTo(timeLab.mas_bottom).mas_offset(Size(15));
+        make.right.bottom.mas_offset(-Size(15));
+    }];
+    
+    UIView *wayV = [UIView new];
+    wayV.backgroundColor = RGBCOLOR(255, 255, 255);
+    [scrollV addSubview:wayV];
+    [wayV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.right.mas_offset(0);
+        make.top.equalTo(timeV.mas_bottom).mas_offset(Size(10));
+        make.height.mas_offset(Size(294/2));
+        make.bottom.mas_offset(0);
+    }];
+    
+    UILabel *wayLab = [UILabel ym_labelWithFrame:CGRectZero font:FONT_SIZE_15 textColor:COLOR_RGB_51];
+    wayLab.text = @"工作方式";
+    [wayV addSubview:wayLab];
+    [wayLab mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.top.mas_offset(Size(15));
+    }];
+    _wayTextV = [YMTextView new];
+    _wayTextV.placeholder = @"请填写工作方式";
+    _wayTextV.font = FONT_SIZE_15;
+    _wayTextV.textColor = COLOR_RGB_153;
+    [wayV addSubview:_wayTextV];
+    [_wayTextV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_offset(Size(15));
+        make.top.equalTo(wayLab.mas_bottom).mas_offset(Size(15));
+        make.right.bottom.mas_offset(-Size(15));
+    }];
+
+    NSMutableAttributedString *attr = [NSString praseHtmlStr:self.postInitData.post.job_duty];
+    [attr addAttributes:@{NSForegroundColorAttributeName:COLOR_RGB_102,NSFontAttributeName:FONT_SIZE_15} range:NSMakeRange(0, attr.length)];
+    self.contentTextV.attributedText = attr;
+    
+    
+    self.timeTextV.text = self.postInitData.post.work_time;
+    self.wayTextV.text = self.postInitData.post.work_style;
+}
+#pragma mark - action
+-(void)doSaveItem{
+    [self.view endEditing:YES];
+    
+    NSMutableDictionary *dataDic = [NSMutableDictionary dictionary];
+    [dataDic setValue:self.postInitData.post.ID == 0 ? @"" : NSStringFromInteger(self.postInitData.post.ID) forKey:@"postId"];
+    [dataDic setValue:self.postInitData.post.job_name forKey:@"jobName"];
+    [dataDic setValue:NSStringFromInteger(self.postInitData.post.salary_range_id) forKey:@"salaryRangeId"];
+    
+    [dataDic setValue:[NSString attriToHtmlStrWithAttri:self.contentTextV.attributedText] forKey:@"jobDuty"];
+    [dataDic setValue:self.timeTextV.text forKey:@"workTime"];
+    [dataDic setValue:self.wayTextV.text forKey:@"workStyle"];
+    
+    [dataDic setValue:@"1" forKey:@"status"];
+    
+    NSMutableDictionary *paramDic = [NSMutableDictionary dictionary];
+    [paramDic setValue:[dataDic mj_JSONString] forKey:@"data"];
+    [paramDic setValue:AppDelegateInstance.token forKey:@"token"];
+    
+    [[RHNetAPIManager sharedManager]appAddPostOPT:paramDic].start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+        if (data) {
+            if (code == 5000) {//认证通过之后未交入驻押金前为试用期,试用期只能发布3个岗位,另一种情况为非试用期,但入驻押金少于1000,同样不能发布职位,会返回5000,这时,请跳转充值页面
+                [HUD showHUDError:nil title:data[@"data"]];
+                return ;
+            }
+            [HUD showHUDError:nil title:@"已保存"];
+            [self.navigationController popViewControllerAnimated:YES];
+        }
+    });
+}
+/*
+#pragma mark - Navigation
+
+// In a storyboard-based application, you will often want to do a little preparation before navigation
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
+    // Get the new view controller using [segue destinationViewController].
+    // Pass the selected object to the new view controller.
+}
+*/
+
+@end

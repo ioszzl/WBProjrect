@@ -1,0 +1,303 @@
+//
+//  CompanyEnvironmentViewController.m
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/12.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "CompanyEnvironmentViewController.h"
+#import "UploadImageTableViewCell.h"
+#import "CompanyHeadView.h"
+
+@interface CompanyEnvironmentViewController ()<UITableViewDelegate,UITableViewDataSource>
+@property (nonatomic, strong) UITableView *tableV;
+@property (nonatomic, strong) NSMutableArray *imgArr;
+
+@property (nonatomic, strong) NSMutableArray *receptionImgArr;
+@property (nonatomic, strong) NSMutableArray *workImgArr;
+@property (nonatomic, strong) NSMutableArray *meetingImgArr;
+@property (nonatomic, strong) NSMutableArray *restImgArr;
+@property (nonatomic, strong) NSMutableArray *medalImgArr;
+@end
+
+@implementation CompanyEnvironmentViewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    [self initUI];
+}
+-(void)initUI{
+    self.title = @"公司环境";
+    
+    _tableV = [[UITableView alloc]initWithFrame:CGRectZero style:UITableViewStyleGrouped];
+    
+    _tableV.separatorStyle = UITableViewCellSeparatorStyleNone;
+    _tableV.showsVerticalScrollIndicator = NO;
+    _tableV.showsHorizontalScrollIndicator = NO;
+    _tableV.backgroundColor = COLOR_BG;
+    _tableV.dataSource = self;
+    _tableV.delegate = self;
+    [self.view addSubview:_tableV];
+    [_tableV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.edges.equalTo(self.view);
+    }];
+}
+-(void)setModel:(CompanyDetailInfoModel *)model{
+    _model = model;
+    
+    if (model.data.imageList.count == 5) {
+        int i=0;
+        for (CompanyDetailInfoImageList *list in model.data.imageList) {
+            NSDictionary *dic = @{@"imgId": NSStringFromInteger(list.imageId),
+                                  @"imgUrl":list.imageUrl
+                                  };
+            switch (i) {
+                case 0:
+                    [self.receptionImgArr addObject:dic];
+                    break;
+                case 1:
+                    [self.workImgArr addObject:dic];
+                    break;
+                case 2:
+                    [self.meetingImgArr addObject:dic];
+                    break;
+                case 3:
+                    [self.restImgArr addObject:dic];
+                    break;
+                case 4:
+                    [self.medalImgArr addObject:dic];
+                    break;
+                default:
+                    break;
+            }
+            
+            i++;
+            
+        }
+        
+    }
+}
+#pragma mark - action
+-(void)doSaveBtn{
+
+    if (self.receptionImgArr.count == 0 ||
+        self.workImgArr.count == 0 ||
+        self.meetingImgArr.count == 0 ||
+        self.restImgArr.count == 0 ||
+        self.medalImgArr.count == 0) {
+        
+        [HUD showHUDError:nil title:@"请上传所有环境照片"];
+        return;
+    }
+    
+    NSMutableDictionary *dataDic = [NSMutableDictionary dictionary];
+    [dataDic setValue:NSStringFromInteger(self.model.data.ID) forKey:@"id"];
+    
+    NSMutableArray *temp = [NSMutableArray array];
+    [temp addObject:[self.receptionImgArr[0] objectForKey:@"imgId"]];
+    [temp addObject:[self.workImgArr[0] objectForKey:@"imgId"]];
+    [temp addObject:[self.meetingImgArr[0] objectForKey:@"imgId"]];
+    [temp addObject:[self.restImgArr[0] objectForKey:@"imgId"]];
+    [temp addObject:[self.medalImgArr[0] objectForKey:@"imgId"]];
+    
+    [dataDic setValue:[temp componentsJoinedByString:@","] forKey:@"companyEnvironmentalPicIds"];
+    
+    NSMutableDictionary *paramDic = [NSMutableDictionary dictionary];
+    [paramDic setValue:[dataDic mj_JSONString] forKey:@"data"];
+    [paramDic setValue:AppDelegateInstance.token forKey:@"token"];
+    
+    [[RHNetAPIManager sharedManager]appSaveInfoCenterCompanyOPT:paramDic].start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+        if (data) {
+            [HUD showHUDError:nil title:@"已保存"];
+            [self.navigationController popToRootViewControllerAnimated:YES];
+        }
+    });
+}
+
+#pragma mark - tableview delegate
+-(NSInteger)numberOfSectionsInTableView:(UITableView *)tableView{
+    return 5;
+}
+-(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section{
+    
+    return 1;
+}
+-(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
+    
+    
+    switch (indexPath.section) {
+        case 0:{
+            CELL_DEFINE_Identifier(UploadImageTableViewCell,@"recpetion");
+            cell.multiCount = 1;
+            cell.imgUrlMuarr = self.receptionImgArr;
+            cell.imgBtnBlock = ^(NSMutableArray * _Nonnull imgArr) {
+                [self.receptionImgArr addObjectsFromArray:imgArr];
+                //weakcell.imgUrlMuarr = self.receptionImgArr;
+                [self.tableV reloadData];
+            };
+            return cell;
+        }
+            break;
+        case 1:{
+            CELL_DEFINE_Identifier(UploadImageTableViewCell,@"work");
+            cell.multiCount = 1;
+            cell.imgUrlMuarr = self.workImgArr;
+            cell.imgBtnBlock = ^(NSMutableArray * _Nonnull imgArr) {
+                [self.workImgArr addObjectsFromArray:imgArr];
+                //weakcell.imgUrlMuarr = self.workImgArr;
+                [self.tableV reloadData];
+            };
+            return cell;
+        }
+            break;
+        case 2:{
+            CELL_DEFINE_Identifier(UploadImageTableViewCell,@"meeting");
+            cell.multiCount = 1;
+            cell.imgUrlMuarr = self.meetingImgArr;
+            cell.imgBtnBlock = ^(NSMutableArray * _Nonnull imgArr) {
+                [self.meetingImgArr addObjectsFromArray:imgArr];
+                //weakcell.imgUrlMuarr = self.meetingImgArr;
+                [self.tableV reloadData];
+            };
+            return cell;
+        }
+            break;
+        case 3:{
+            CELL_DEFINE_Identifier(UploadImageTableViewCell,@"rest");
+            cell.multiCount = 1;
+            cell.imgUrlMuarr = self.restImgArr;
+            cell.imgBtnBlock = ^(NSMutableArray * _Nonnull imgArr) {
+                [self.restImgArr addObjectsFromArray:imgArr];
+                //weakcell.imgUrlMuarr = self.restImgArr;
+                [self.tableV reloadData];
+            };
+            return cell;
+        }
+            break;
+        case 4:{
+            CELL_DEFINE_Identifier(UploadImageTableViewCell,@"medal");
+            cell.multiCount = 1;
+            cell.imgUrlMuarr = self.medalImgArr;
+            cell.imgBtnBlock = ^(NSMutableArray * _Nonnull imgArr) {
+                [self.medalImgArr addObjectsFromArray:imgArr];
+                //weakcell.imgUrlMuarr = self.medalImgArr;
+                [self.tableV reloadData];
+            };
+            return cell;
+        }
+            break;
+        default:
+            break;
+    }
+    
+    CELL_DEFINE(UITableViewCell);
+    return cell;
+}
+-(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath{
+    
+    UploadImageTableViewCell *cell = (UploadImageTableViewCell *)[self tableView:tableView cellForRowAtIndexPath:indexPath];
+    
+    return cell.cellH;
+   
+}
+-(UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section{
+    CompanyHeadView *view = [[CompanyHeadView alloc]initWithFrame:CGRectMake(0, 0, kScreenWidth, Size(65/2))];
+    [view.imgV mas_remakeConstraints:^(MASConstraintMaker *make) {
+        make.top.mas_offset(Size(15));
+        make.left.mas_offset(Size(15));
+    }];
+    
+    switch (section) {
+        case 0:
+            view.titleLab.text = @"前台";
+            break;
+        case 1:
+            view.titleLab.text = @"办公区";
+            break;
+        case 2:
+            view.titleLab.text = @"会议室";
+            break;
+        case 3:
+            view.titleLab.text = @"休息区";
+            break;
+        case 4:
+            view.titleLab.text = @"奖章";
+            break;
+        default:
+            break;
+    }
+    return view;
+}
+-(CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section{
+    return Size(65/2);
+}
+-(UIView *)tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section{
+    if (section == 4) {
+        UIView *view = [[UIView alloc]initWithFrame:CGRectMake(0, 0, kScreenWidth, Size(198/2+20))];
+        UIButton *nextBtn = [UIButton ym_ButtonWithFrame:CGRectZero title:@"保存" backgroundColor:COLOR_MAIN_ENTERPRISE titleColor:RGBCOLOR(255, 255, 255) titleSize:Size(17)];
+        nextBtn.layer.cornerRadius = Size(5);
+        [view addSubview:nextBtn];
+        [nextBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.left.mas_offset(Size(15));
+            make.width.mas_equalTo(kScreenWidth-Size(30));
+            make.top.mas_offset(Size(50));
+            make.height.mas_equalTo(Size(98/2));
+        }];
+        [nextBtn addTarget:self action:@selector(doSaveBtn) forControlEvents:UIControlEventTouchUpInside];
+        
+        return view;
+    }
+    return [UIView new];
+}
+-(CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section{
+    if (section == 4) {
+        return Size(198/2+20);
+    }
+    return Size(5);
+}
+
+#pragma mark - 懒加载
+-(NSMutableArray *)receptionImgArr{
+    if (!_receptionImgArr) {
+        _receptionImgArr = [NSMutableArray array];
+    }
+    return _receptionImgArr;
+}
+-(NSMutableArray *)workImgArr{
+    if (!_workImgArr) {
+        _workImgArr = [NSMutableArray array];
+    }
+    return _workImgArr;
+}
+-(NSMutableArray *)meetingImgArr{
+    if (!_meetingImgArr) {
+        _meetingImgArr = [NSMutableArray array];
+    }
+    return _meetingImgArr;
+}
+-(NSMutableArray *)restImgArr{
+    if (!_restImgArr) {
+        _restImgArr = [NSMutableArray array];
+    }
+    return _restImgArr;
+}
+-(NSMutableArray *)medalImgArr{
+    if (!_medalImgArr) {
+        _medalImgArr = [NSMutableArray array];
+    }
+    return _medalImgArr;
+}
+/*
+#pragma mark - Navigation
+
+// In a storyboard-based application, you will often want to do a little preparation before navigation
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
+    // Get the new view controller using [segue destinationViewController].
+    // Pass the selected object to the new view controller.
+}
+*/
+
+@end

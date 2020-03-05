@@ -1,0 +1,20 @@
+//
+//  DeviceDelegateHelper.h
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/12/7.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+#import "ECDeviceHeaders.h"
+NS_ASSUME_NONNULL_BEGIN
+
+@interface DeviceDelegateHelper : NSObject <ECDeviceDelegate>
+/**
+ *@brief 获取DeviceDelegateHelper单例句柄
+ */
++(DeviceDelegateHelper*)sharedInstance; 
+@end
+
+NS_ASSUME_NONNULL_END

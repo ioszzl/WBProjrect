@@ -1,0 +1,24 @@
+//
+//  ChatResumeHeadView.h
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/12/8.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+#import "ResumeDetailModel.h"
+NS_ASSUME_NONNULL_BEGIN
+
+@interface ChatResumeHeadView : UIView
+@property (nonatomic, strong) UILabel *nameLab;
+@property (nonatomic, strong) UILabel *positionLab;
+@property (nonatomic, strong) UIImageView *headImgV;
+@property (nonatomic, strong) UILabel *introLab;
+
+@property (nonatomic, strong) NSMutableArray<UILabel *> *tagLabArr;
+
+@property (nonatomic, strong) ResumeDetailResume *resume;
+@end
+
+NS_ASSUME_NONNULL_END

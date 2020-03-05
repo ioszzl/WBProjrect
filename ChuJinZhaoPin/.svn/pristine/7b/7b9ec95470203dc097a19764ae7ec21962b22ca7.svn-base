@@ -1,0 +1,20 @@
+//
+//  CompanyInfoDetailViewController.h
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/14.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "BaseViewController.h"
+#import "CompanyDetailInfoModel.h"
+NS_ASSUME_NONNULL_BEGIN
+
+/**
+ 企业端公司详情页
+ */
+@interface CompanyInfoDetailViewController : BaseViewController
+
+@end
+
+NS_ASSUME_NONNULL_END

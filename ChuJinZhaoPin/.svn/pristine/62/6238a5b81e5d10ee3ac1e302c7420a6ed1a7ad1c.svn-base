@@ -1,0 +1,579 @@
+//
+//  PositionDetailViewController.m
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/14.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "PositionDetailViewController.h"
+#import "PositionTreatmentTableViewCell.h"
+#import "ResumeHeaderView.h"
+#import "PositionPayTableViewCell.h"
+#import "PositionBenefitTableViewCell.h"
+#import "CompanyScoreView.h"
+#import "CompanyInfoDetailViewController.h"
+#import "PayEditViewController.h"
+#import "TreatmentEditViewController.h"
+#import "PositionContentViewController.h"
+#import "PositionRequireViewController.h"
+#import "PositionInfoTableViewCell.h"
+#import "AddResumeTableViewCell.h"
+#import "PositionInfoEditViewController.h"
+#import "PositionInitModel.h"
+@interface PositionDetailViewController ()<UITableViewDataSource,UITableViewDelegate>{
+    BOOL _isEdit;
+}
+@property (nonatomic, strong) UITableView *tableV;
+@property (nonatomic, strong) PositionInitModel *model;
+@end
+
+@implementation PositionDetailViewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+     _isEdit = YES;
+    [self initUI];
+    
+   
+}
+-(void)viewDidAppear:(BOOL)animated{
+    [super viewDidAppear:animated];
+    [self requestInitData];
+}
+
+-(void)initUI{
+    self.title = @"岗位详情";
+    
+    UIBarButtonItem *item = [[UIBarButtonItem alloc]initWithTitle:@"保存" style:UIBarButtonItemStyleDone target:self action:@selector(doSaveItem)];
+    self.navigationItem.rightBarButtonItem = item;
+    
+    
+    _tableV = [[UITableView alloc]initWithFrame:CGRectZero style:UITableViewStyleGrouped];
+    _tableV.separatorStyle = UITableViewCellSeparatorStyleNone;
+    _tableV.showsVerticalScrollIndicator = NO;
+    _tableV.showsHorizontalScrollIndicator = NO;
+    _tableV.backgroundColor = COLOR_BG;
+    _tableV.dataSource = self;
+    _tableV.delegate = self;
+    [self.view addSubview:_tableV];
+    [_tableV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.edges.equalTo(self.view);
+    }];
+    _tableV.rowHeight = UITableViewAutomaticDimension;
+    _tableV.contentInset = UIEdgeInsetsMake(Size(10), 0, 0, 0);
+    
+    
+    UIView *tableFooterView = [[UIView alloc]initWithFrame:CGRectMake(0, 0, kScreenWidth, Size(50))];
+    _tableV.tableFooterView = tableFooterView;
+    UIButton *saveBtn = [UIButton ym_ButtonWithFrame:CGRectMake(Size(15), 0,kScreenWidth-Size(30), Size(50)) title:@"发布岗位" backgroundColor:COLOR_MAIN_ENTERPRISE titleColor:RGBCOLOR(255, 255, 255) titleSize:Size(18)];
+    saveBtn.layer.cornerRadius = Size(4);
+    [tableFooterView addSubview:saveBtn];
+    [saveBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_offset(Size(15));
+        make.top.mas_offset(0);
+        make.right.mas_offset(-Size(15));
+    }];
+    [saveBtn addTarget:self action:@selector(doPublish) forControlEvents:UIControlEventTouchUpInside];
+    
+    
+    
+}
+#pragma mark - request
+-(void)requestInitData{
+    NSMutableDictionary *dataDic = [NSMutableDictionary dictionary];
+    [dataDic setValue:self.postId forKey:@"postId"];
+    
+    NSMutableDictionary *paramDic = [NSMutableDictionary dictionary];
+    [paramDic setValue:[dataDic mj_JSONString] forKey:@"data"];
+    [paramDic setValue:AppDelegateInstance.token forKey:@"token"];
+    
+    [[RHNetAPIManager sharedManager]appToAppEditPostOPT:paramDic].start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+        if (data) {
+            self.model = [PositionInitModel mj_objectWithKeyValues:data];
+            
+            [self.tableV reloadData];
+        }
+        
+    });
+}
+#pragma mark -action
+-(void)doSaveItem{
+    NSMutableDictionary *dataDic = [NSMutableDictionary dictionary];
+    [dataDic setValue:self.postId forKey:@"postId"];
+    [dataDic setValue:NSStringFromInteger(self.model.data.post.post_money) forKey:@"postMoney"];
+    [dataDic setValue:self.model.data.post.job_name forKey:@"jobName"];
+    [dataDic setValue:self.model.data.post.department forKey:@"department"];
+    [dataDic setValue:NSStringFromInteger(self.model.data.post.work_year) forKey:@"workYear"];
+    [dataDic setValue:NSStringFromInteger(self.model.data.post.industry_class_id) forKey:@"industryClassId"];
+    [dataDic setValue:NSStringFromInteger(self.model.data.post.work_address_region_id) forKey:@"workAddressRegionId"];
+    [dataDic setValue:NSStringFromInteger(self.model.data.post.education_level) forKey:@"educationLevel"];
+    [dataDic setValue:self.model.data.post.company_address forKey:@"companyAddress"];
+    [dataDic setValue:NSStringFromInteger(self.model.data.post.salary_range_id) forKey:@"salaryRangeId"];
+    [dataDic setValue:self.model.data.post.detailed_treatment forKey:@"detailedTreatment"];
+    [dataDic setValue:self.model.data.post.des_card_ids forKey:@"desCardIds"];
+    [dataDic setValue:self.model.data.post.other_good forKey:@"otherGood"];
+    [dataDic setValue:self.model.data.post.job_duty forKey:@"jobDuty"];
+    [dataDic setValue:self.model.data.post.work_time forKey:@"workTime"];
+    [dataDic setValue:self.model.data.post.work_style forKey:@"workStyle"];
+    [dataDic setValue:self.model.data.post.food_situation forKey:@"foodSituation"];
+    [dataDic setValue:self.model.data.post.bed_situation forKey:@"bedSituation"];
+    [dataDic setValue:self.model.data.post.social_good forKey:@"socialGood"];
+    [dataDic setValue:self.model.data.post.total_pay forKey:@"totalPay"];
+    [dataDic setValue:self.model.data.post.basic_pay forKey:@"basicPay"];
+    [dataDic setValue:self.model.data.post.pay_plan forKey:@"payPlan"];
+    [dataDic setValue:self.model.data.post.work_requirement forKey:@"workRequirement"];
+    [dataDic setValue:NSStringFromInteger(self.model.data.post.post_money_open) forKey:@"postMoneyOpen"];
+    [dataDic setValue:@"1" forKey:@"status"];
+    
+    NSMutableDictionary *paramDic = [NSMutableDictionary dictionary];
+    [paramDic setValue:[dataDic mj_JSONString] forKey:@"data"];
+    [paramDic setValue:AppDelegateInstance.token forKey:@"token"];
+    
+    [[RHNetAPIManager sharedManager]appAddPostOPT:paramDic].start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+        if (data) {
+            if (code == 5000) {//认证通过之后未交入驻押金前为试用期,试用期只能发布3个岗位,另一种情况为非试用期,但入驻押金少于1000,同样不能发布职位,会返回5000,这时,请跳转充值页面
+                [HUD showHUDError:nil title:data[@"data"]];
+                return ;
+            }
+            [HUD showHUDError:nil title:@"已保存"];
+        }
+    });
+}
+-(void)doDepositMoneyBtn:(UIButton *)btn{
+    btn.selected = !btn.selected;
+}
+-(void)doPublish{
+    NSMutableDictionary *dataDic = [NSMutableDictionary dictionary];
+    [dataDic setValue:self.postId forKey:@"postId"];
+    [dataDic setValue:NSStringFromInteger(self.model.data.post.post_money) forKey:@"postMoney"];
+    [dataDic setValue:self.model.data.post.job_name forKey:@"jobName"];
+    [dataDic setValue:self.model.data.post.department forKey:@"department"];
+    [dataDic setValue:NSStringFromInteger(self.model.data.post.work_year) forKey:@"workYear"];
+    [dataDic setValue:NSStringFromInteger(self.model.data.post.industry_class_id) forKey:@"industryClassId"];
+    [dataDic setValue:NSStringFromInteger(self.model.data.post.work_address_region_id) forKey:@"workAddressRegionId"];
+    [dataDic setValue:NSStringFromInteger(self.model.data.post.education_level) forKey:@"educationLevel"];
+    [dataDic setValue:self.model.data.post.company_address forKey:@"companyAddress"];
+    [dataDic setValue:NSStringFromInteger(self.model.data.post.salary_range_id) forKey:@"salaryRangeId"];
+    [dataDic setValue:self.model.data.post.detailed_treatment forKey:@"detailedTreatment"];
+    [dataDic setValue:self.model.data.post.des_card_ids forKey:@"desCardIds"];
+    [dataDic setValue:self.model.data.post.other_good forKey:@"otherGood"];
+    [dataDic setValue:self.model.data.post.job_duty forKey:@"jobDuty"];
+    [dataDic setValue:self.model.data.post.work_time forKey:@"workTime"];
+    [dataDic setValue:self.model.data.post.work_style forKey:@"workStyle"];
+    [dataDic setValue:self.model.data.post.food_situation forKey:@"foodSituation"];
+    [dataDic setValue:self.model.data.post.bed_situation forKey:@"bedSituation"];
+    [dataDic setValue:self.model.data.post.social_good forKey:@"socialGood"];
+    [dataDic setValue:self.model.data.post.total_pay forKey:@"totalPay"];
+    [dataDic setValue:self.model.data.post.basic_pay forKey:@"basicPay"];
+    [dataDic setValue:self.model.data.post.pay_plan forKey:@"payPlan"];
+    [dataDic setValue:self.model.data.post.work_requirement forKey:@"workRequirement"];
+    [dataDic setValue:NSStringFromInteger(self.model.data.post.post_money_open) forKey:@"postMoneyOpen"];
+    [dataDic setValue:@"0" forKey:@"status"];
+    
+    NSMutableDictionary *paramDic = [NSMutableDictionary dictionary];
+    [paramDic setValue:[dataDic mj_JSONString] forKey:@"data"];
+    [paramDic setValue:AppDelegateInstance.token forKey:@"token"];
+    
+    [[RHNetAPIManager sharedManager]appAddPostOPT:paramDic].start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+        if (data) {
+            if (code == 5000) {//认证通过之后未交入驻押金前为试用期,试用期只能发布3个岗位,另一种情况为非试用期,但入驻押金少于1000,同样不能发布职位,会返回5000,这时,请跳转充值页面
+                [HUD showHUDError:nil title:data[@"data"]];
+                return ;
+            }
+            [HUD showHUDError:nil title:@"已发布"];
+        }
+    });
+}
+#pragma mark - tableView delegate
+-(NSInteger)numberOfSectionsInTableView:(UITableView *)tableView{
+    return 5;
+}
+-(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section{
+    if (section == 3) {
+        if (self.model.data.post.job_duty.length != 0){
+            return 3;
+        }
+    }
+    
+    
+    return 1;
+}
+-(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
+    if (indexPath.section == 0) {
+        if (self.model.data.post.ID == 0) {
+            CELL_DEFINE(AddResumeTableViewCell);
+            [cell.addBtn setTitle:@"岗位信息+" forState:UIControlStateNormal];
+            cell.addBtnBlock = ^(UIButton * _Nonnull btn) {
+                PositionInfoEditViewController *vc = [PositionInfoEditViewController new];
+                vc.postInitData = self.model.data;
+                vc.addPositionBlock = ^(NSString * _Nonnull postId) {
+                    self.postId = postId;
+                };
+                [self.navigationController pushViewController:vc animated:YES];
+            };
+            return cell;
+        }
+        CELL_DEFINE(PositionInfoTableViewCell);
+        cell.nameLab.text = self.model.data.post.job_name;//@"产品经理";
+        cell.moneyLab.text = self.model.data.post.show_range;//@"7~9K";
+        
+        
+        cell.tradeLab.text = self.model.data.post.industry_class;//@"移动互联网";
+        cell.educationLab.text = [AppDelegateInstance educationNameWithID:self.model.data.post.education_level];//@"本科";
+        [cell.educationLab sizeToFit];
+        [cell.educationLab mas_updateConstraints:^(MASConstraintMaker *make) {
+            make.width.mas_equalTo(cell.educationLab.width);
+        }];
+        cell.yearLab.text = [AppDelegateInstance companyWorkYearNameWithID:self.model.data.post.work_year];//@"1-3年";
+        [cell.yearLab sizeToFit];
+        [cell.yearLab mas_updateConstraints:^(MASConstraintMaker *make) {
+            make.width.mas_equalTo(cell.yearLab.width);
+        }];
+        cell.addressLab.text = self.model.data.post.company_address;//@"北京市 海淀区中关村科贸电子城7层";
+        cell.markArr = [self.model.data.post.fl componentsSeparatedByString:@","];
+        return cell;
+    }
+    if (indexPath.section == 1) {
+        if (self.model.data.post.total_pay.length == 0 &&
+            self.model.data.post.basic_pay.length == 0 &&
+            self.model.data.post.pay_plan.length == 0) {
+            
+            CELL_DEFINE(AddResumeTableViewCell);
+            [cell.addBtn setTitle:@"薪资待遇+" forState:UIControlStateNormal];
+            cell.addBtnBlock = ^(UIButton * _Nonnull btn) {
+                if (!self.postId) {
+                    [HUD showHUDError:nil title:@"请先完善岗位信息"];
+                    return ;
+                }
+                PayEditViewController *vc = [PayEditViewController new];
+                vc.postInitData = self.model.data;
+                
+                [self.navigationController pushViewController:vc animated:YES];
+            };
+            return cell;
+        }
+        CELL_DEFINE(PositionPayTableViewCell);
+        cell.totalMoneyLab.text = self.model.data.post.total_pay;//@"5000-10000元/月";
+        cell.baseMoneyLab.text = self.model.data.post.basic_pay;//@"试用期2300元。不是当地时间，不干拉倒";
+        cell.payDateLab.text = self.model.data.post.pay_plan;//@"每个月月底";
+        return cell;
+    }
+    if (indexPath.section == 2) {
+        if (self.model.data.post.food_situation.length == 0 &&
+            self.model.data.post.bed_situation.length == 0 &&
+            self.model.data.post.social_good.length == 0 &&
+            self.model.data.post.other_good.length == 0) {
+            
+            CELL_DEFINE(AddResumeTableViewCell);
+            [cell.addBtn setTitle:@"公司福利+" forState:UIControlStateNormal];
+            cell.addBtnBlock = ^(UIButton * _Nonnull btn) {
+                if (!self.postId) {
+                    [HUD showHUDError:nil title:@"请先完善岗位信息"];
+                    return ;
+                }
+                TreatmentEditViewController *vc = [TreatmentEditViewController new];
+                vc.postInitData = self.model.data;
+                [self.navigationController pushViewController:vc animated:YES];
+            };
+            
+            return cell;
+        }
+        CELL_DEFINE(PositionBenefitTableViewCell);
+        cell.foodLab.text = self.model.data.post.food_situation;//@"有";
+        cell.stayLab.text = self.model.data.post.bed_situation;//@"无";
+        cell.socialLab.text = self.model.data.post.social_good;//@"入职缴纳五险一金";
+        cell.otherLab.text = self.model.data.post.other_good;//@"下午茶、休假、年度旅途";
+        return cell;
+    }
+    if (indexPath.section == 3) {
+        
+        if (self.model.data.post.job_duty.length == 0 &&
+            self.model.data.post.work_time.length == 0 &&
+            self.model.data.post.work_style.length == 0) {
+            
+            CELL_DEFINE(AddResumeTableViewCell);
+            [cell.addBtn setTitle:@"岗位说明+" forState:UIControlStateNormal];
+            cell.addBtnBlock = ^(UIButton * _Nonnull btn) {
+                if (!self.postId) {
+                    [HUD showHUDError:nil title:@"请先完善岗位信息"];
+                    return ;
+                }
+                PositionContentViewController *vc = [PositionContentViewController new];
+                vc.postInitData = self.model.data;
+                [self.navigationController pushViewController:vc animated:YES];
+            };
+            
+            return cell;
+        }
+        
+        CELL_DEFINE(PositionTreatmentTableViewCell);
+        cell.hiddenLine = NO;
+        cell.titleLab.hidden = NO;
+        switch (indexPath.row) {
+            case 0:{
+                cell.titleLab.text = @"工作内容：";
+                NSMutableAttributedString *attr = [NSString praseHtmlStr:self.model.data.post.job_duty];
+                [attr addAttributes:@{NSForegroundColorAttributeName:COLOR_RGB_102,NSFontAttributeName:FONT_SIZE_15} range:NSMakeRange(0, attr.length)];
+                cell.contentLab.attributedText = attr;//@"1、以客户学习环境和就撒霍建华的设计费had数据可加上家和房间爱上合适的话范\n2、啊哈所感动好久复合大师暗红色的股份哈公司的金黄色的韩国发方法告诉大嘎达是\n3、氨基酸的积分咖妃供货商发生大大发\n4、韩国萨郭德纲法规防风固沙孤独感\n5、广东省刚好gas发都发过水电费嘎达是挥洒的规划法第三方嘎达法定身份安徽省；\n6、哈撒大哥粉红色的华盛顿；";
+            }
+                break;
+            case 1:{
+                cell.titleLab.text = @"工作时间：";
+                //NSMutableAttributedString *attr = [[NSMutableAttributedString alloc]initWithString:@"周一到周五，周末双休，法定节假日正常休，工作时间为\n\n9:00-19:00" attributes:@{NSForegroundColorAttributeName:COLOR_RGB_51}];
+                //[attr addAttribute:NSForegroundColorAttributeName value:COLOR_RGB_102 range:NSMakeRange(0, @"周一到周五，周末双休，法定节假日正常休，工作时间为".length)];
+                cell.contentLab.text = self.model.data.post.work_time;
+            }
+                break;
+            case 2:
+                cell.titleLab.text = @"工作方式：";
+                cell.contentLab.text = self.model.data.post.work_style;//@"公司坐班制";
+                cell.hiddenLine = YES;
+                break;
+            default:
+                break;
+        }
+        
+        return cell;
+    }
+    if (indexPath.section == 4) {
+        if (self.model.data.post.work_requirement.length == 0) {
+            
+            CELL_DEFINE(AddResumeTableViewCell);
+            [cell.addBtn setTitle:@"任职要求+" forState:UIControlStateNormal];
+            cell.addBtnBlock = ^(UIButton * _Nonnull btn) {
+                if (!self.postId) {
+                    [HUD showHUDError:nil title:@"请先完善岗位信息"];
+                    return ;
+                }
+                PositionRequireViewController *vc = [PositionRequireViewController new];
+                vc.postInitData = self.model.data;
+                [self.navigationController pushViewController:vc animated:YES];
+            };
+            
+            return cell;
+        }
+        
+        PositionTreatmentTableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"PositionTreatmentTableViewCell"];
+        if (!cell) {
+            cell = [[PositionTreatmentTableViewCell alloc]initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:@"PositionTreatmentTableViewCell"];
+            cell.selectionStyle = UITableViewCellSelectionStyleNone;
+            cell.titleLab.hidden = YES;
+            cell.hiddenLine = YES;
+        }
+        
+        NSMutableAttributedString *attr = [NSString praseHtmlStr:self.model.data.post.work_requirement];
+        [attr addAttributes:@{NSForegroundColorAttributeName:COLOR_RGB_102,NSFontAttributeName:FONT_SIZE_15} range:NSMakeRange(0, attr.length)];
+        cell.contentLab.attributedText = attr;//@"1、杀回家地方噶好的司法解释道a，俺三个地方噶多喝水按时；\n2、按实际的合法的伙食费，阿士大夫哈市；\n3、阿萨德股份好的阿萨德刚发的撒发送给，按格式都发，按格式都发；\n4、阿萨德噶是个大发送到;\n5、按时给答复后公司电话";
+        return cell;
+    }
+    
+    
+    CELL_DEFINE(UITableViewCell);
+    return cell;
+}
+-(UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section{
+    UIView *view = [[UIView alloc]initWithFrame:CGRectMake(0, 0, kScreenWidth, Size(44))];
+    
+    ResumeHeaderView *headV = [[ResumeHeaderView alloc]init];
+    headV.frame = CGRectMake(Size(15), 0, kScreenWidth-Size(30), Size(44));
+    UIBezierPath *maskPath = [UIBezierPath bezierPathWithRoundedRect:headV.bounds byRoundingCorners:(UIRectCornerTopLeft | UIRectCornerTopRight) cornerRadii:CGSizeMake(Size(5),Size(5))];//圆角大小
+    CAShapeLayer *maskLayer = [[CAShapeLayer alloc] init];
+    maskLayer.frame = headV.bounds;
+    maskLayer.path = maskPath.CGPath;
+    headV.layer.mask = maskLayer;
+    [view addSubview:headV];
+    
+    
+    [headV.addBtn setImage:[UIImage imageNamed:@"编辑"] forState:(UIControlState)UIControlStateNormal];
+    headV.imgV.image = [UIImage imageNamed:@"home_line_blue"];
+    
+    switch (section) {
+        case 0:{
+            headV.titleLab.text = @"岗位详情";
+            headV.addBtnBlock = ^{
+                PositionInfoEditViewController *vc = [PositionInfoEditViewController new];
+                vc.postInitData = self.model.data;
+                [self.navigationController pushViewController:vc animated:YES];
+            };
+            if (self.postId) {
+                headV.addBtn.hidden = NO;
+            }else{
+                headV.addBtn.hidden = YES;
+            }
+        }
+            break;
+        case 1:{
+            headV.titleLab.text = @"薪资待遇";
+            headV.addBtnBlock = ^{
+                PayEditViewController *vc = [PayEditViewController new];
+                vc.postInitData = self.model.data;
+                [self.navigationController pushViewController:vc animated:YES];
+            };
+            if (self.model.data.post.total_pay.length == 0 &&
+                self.model.data.post.basic_pay.length == 0 &&
+                self.model.data.post.pay_plan.length == 0) {
+                
+                headV.addBtn.hidden = YES;
+            }else{
+                headV.addBtn.hidden = NO;
+            }
+        }
+            break;
+        case 2:{
+            headV.titleLab.text = @"公司福利";
+            headV.addBtnBlock = ^{
+                TreatmentEditViewController *vc = [TreatmentEditViewController new];
+                vc.postInitData = self.model.data;
+                [self.navigationController pushViewController:vc animated:YES];
+            };
+            if (self.model.data.post.food_situation.length == 0 &&
+                self.model.data.post.bed_situation.length == 0 &&
+                self.model.data.post.social_good.length == 0 &&
+                self.model.data.post.other_good.length == 0) {
+                
+                headV.addBtn.hidden = YES;
+            }else{
+                headV.addBtn.hidden = NO;
+            }
+        }
+            break;
+        case 3:{
+            headV.titleLab.text = @"岗位说明";
+            headV.addBtnBlock = ^{
+                PositionContentViewController *vc = [PositionContentViewController new];
+                vc.postInitData = self.model.data;
+                [self.navigationController pushViewController:vc animated:YES];
+            };
+            if (self.model.data.post.job_duty.length == 0 &&
+                self.model.data.post.work_time.length == 0 &&
+                self.model.data.post.work_style.length == 0) {
+                
+                headV.addBtn.hidden = YES;
+            }else{
+                headV.addBtn.hidden = NO;
+            }
+        }
+            break;
+        case 4:{
+            headV.titleLab.text = @"任职要求";
+            headV.addBtnBlock = ^{
+                PositionRequireViewController *vc = [PositionRequireViewController new];
+                vc.postInitData = self.model.data;
+                [self.navigationController pushViewController:vc animated:YES];
+            };
+            if (self.model.data.post.work_requirement.length == 0) {
+                
+                headV.addBtn.hidden = YES;
+            }else{
+                headV.addBtn.hidden = NO;
+            }
+        }
+            break;
+        default:
+            break;
+    }
+    
+    return view;
+}
+-(CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section{
+    return Size(44);
+}
+-(UIView *)tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section{
+    /*
+    if (self.postId) {
+        if (section == 4) {
+            UIView *footerView = [[UIView alloc]initWithFrame:CGRectMake(0, 0, kScreenWidth, Size(120/2+10+112/2+10+10))];
+            
+            UIView *view = [UIView new];
+            view.backgroundColor = RGBCOLOR(255, 255, 255);
+            view.layer.borderColor = COLOR_RGB_line.CGColor;
+            view.layer.borderWidth = 0.5;
+            [footerView addSubview:view];
+            [view mas_makeConstraints:^(MASConstraintMaker *make) {
+                make.top.mas_offset(Size(10));
+                make.left.right.mas_offset(0);
+                make.height.mas_equalTo(Size(120/2));
+            }];
+            
+            UILabel *lab = [UILabel ym_labelWithFrame:CGRectZero font:FONT_SIZE_15 textColor:COLOR_RGB_51];
+            lab.text = @"岗位押金";
+            [view addSubview:lab];
+            [lab mas_makeConstraints:^(MASConstraintMaker *make) {
+                make.left.mas_offset(Size(15));
+                make.centerY.equalTo(view);
+            }];
+            
+            UILabel *depositMoneyLab = [UILabel ym_labelWithFrame:CGRectZero font:FONT_SIZE_15 textColor:COLOR_MAIN_ENTERPRISE];
+            [view addSubview:depositMoneyLab];
+            [depositMoneyLab mas_makeConstraints:^(MASConstraintMaker *make) {
+                make.left.equalTo(lab.mas_right).mas_offset(Size(15));
+                make.centerY.equalTo(lab);
+            }];
+            depositMoneyLab.text = NSStringFromInteger(self.model.data.post.post_money);//@"20";
+            
+            UIButton *depositMoneyBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+            [depositMoneyBtn setImage:[UIImage imageNamed:@"guan"] forState:UIControlStateNormal];
+            [depositMoneyBtn setImage:[UIImage imageNamed:@"open1"] forState:UIControlStateSelected];
+    
+            [view addSubview:depositMoneyBtn];
+            [depositMoneyBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+                make.right.mas_offset(-Size(15));
+                make.centerY.equalTo(view);
+            }];
+            [depositMoneyBtn addTarget:self action:@selector(doDepositMoneyBtn:) forControlEvents:UIControlEventTouchUpInside];
+            
+            if (self.model.data.post.post_money_open == 0) {//是否开启岗位押金(0:关闭,1:开启)
+                depositMoneyBtn.selected = NO;
+            }else{
+                depositMoneyBtn.selected = YES;
+            }
+            
+            //:CGRectMake(0, 0, kScreenWidth, Size(152/2))
+            CompanyScoreView *companyV = [[CompanyScoreView alloc]init];
+            [footerView addSubview:companyV];
+            [companyV mas_makeConstraints:^(MASConstraintMaker *make) {
+                make.top.equalTo(view.mas_bottom);
+                make.left.right.mas_offset(0);
+                make.bottom.mas_offset(0);
+            }];
+
+//            [companyV.iconV sd_setImageWithURL:[NSURL URLWithString:self.model.data.post.] placeholderImage:[UIImage imageNamed:@"附近职位logo"]];
+//            companyV.nameLab.text = self.model.data.post.company_name;//@"好未来";
+//            companyV.countLab.text = [NSString stringWithFormat:@"在招职位%ld个",self.model.data.post.postNum];//@"在招职位80个";
+//            companyV.scoreLab.text = [NSString stringWithFormat:@"%@分",JUDGE_NUll_DEF(self.model.data.post.scoreMap.totalStar, @"0.0")];//@"4.4分";
+//            companyV.score = JUDGE_NUll_DEF(self.model.data.post.scoreMap.totalStar, @"0.0");
+            companyV.tapBlock = ^{
+                NSLog(@"tap");
+                CompanyInfoDetailViewController *vc = [CompanyInfoDetailViewController new];
+                [self.navigationController pushViewController:vc animated:YES];
+            };
+            
+            
+            return footerView;
+        }
+    }*/
+    
+    return [UIView new];
+}
+-(CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section{
+//    if (self.postId) {
+//        if (section == 4) {
+//            return Size(120/2+10+112/2+10+10);
+//        }
+//    }
+    
+    return Size(10);
+}
+/*
+#pragma mark - Navigation
+
+// In a storyboard-based application, you will often want to do a little preparation before navigation
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
+    // Get the new view controller using [segue destinationViewController].
+    // Pass the selected object to the new view controller.
+}
+*/
+
+@end

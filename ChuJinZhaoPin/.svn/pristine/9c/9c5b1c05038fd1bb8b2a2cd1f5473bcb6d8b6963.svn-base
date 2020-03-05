@@ -1,0 +1,571 @@
+//
+//  CompanyDetailViewController.m
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/5.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "CompanyDetailViewController.h"
+#import "JobCommentTableViewCell.h"
+#import "CompanyMessageTableViewCell.h"
+#import "JobRequireDetailHeaderView.h"
+#import "CompanyEnvironmentTableViewCell.h"
+#import "HomeJobListTableViewCell.h"
+#import "CompanyIntroTableViewCell.h"
+#import "CompanyDetailView.h"
+#import "CompanyCommentDetailViewController.h"
+#import "CompanyBusinessInfoViewController.h"
+#import "CompanyDetailModel.h"
+#import "CommentDetailModel.h"
+#import "RecruitJobModel.h"
+#import "JobDetailViewController.h"
+@interface CompanyDetailViewController ()<UITableViewDelegate,UITableViewDataSource>{
+    NSInteger _pageNum;
+}
+@property (nonatomic, strong) UITableView *tableV;
+@property (nonatomic, strong) CompanyDetailView *companyV;
+@property (nonatomic, strong) NSArray<RecruitJobList *> *jobDataSource;
+
+
+@property (nonatomic, strong) UIButton *companyIntroBtn;
+@property (nonatomic, strong) UIButton *recruitJobBtn;
+@property (nonatomic, strong) UIView *btnLine;
+
+@property (nonatomic, strong) CompanyDetailModel *model;
+@property (nonatomic, strong) CommentDetailModel *commentM;
+@end
+
+@implementation CompanyDetailViewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    [self initUI];
+    
+    [self requestDetailData];
+    [self requestCommentListData];
+    
+    _pageNum = 1;
+    [self requestJobListData];
+}
+-(void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    
+    self.navigationController.navigationBar.translucent = YES;
+    [self.navigationController.navigationBar setBackgroundImage:[UIImage new] forBarMetrics:UIBarMetricsDefault];
+    [self.navigationController.navigationBar setShadowImage:[UIImage new]];
+    
+    [self scrollViewDidScroll:self.tableV];
+}
+-(void)viewWillDisappear:(BOOL)animated {
+    [super viewWillDisappear:animated];
+    
+    self.navigationController.navigationBar.translucent = NO;
+    [self.navigationController.navigationBar setBackgroundImage:nil forBarMetrics:UIBarMetricsDefault];
+    [self.navigationController.navigationBar setShadowImage:nil];
+    
+}
+-(void)initUI{
+    
+    
+    _tableV = [[UITableView alloc]initWithFrame:CGRectZero style:UITableViewStyleGrouped];
+    _tableV.tableFooterView = [UIView new];
+    _tableV.separatorStyle = UITableViewCellSeparatorStyleNone;
+    _tableV.showsVerticalScrollIndicator = NO;
+    _tableV.showsHorizontalScrollIndicator = NO;
+    _tableV.backgroundColor = COLOR_BG;
+    _tableV.dataSource = self;
+    _tableV.delegate = self;
+    [_tableV registerClass:[JobRequireDetailHeaderView class] forHeaderFooterViewReuseIdentifier:@"JobRequireDetailHeaderV"];
+    if (@available(iOS 11.0, *)) {
+        _tableV.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
+    } else {
+        // Fallback on earlier versions
+    }
+    [self.view addSubview:_tableV];
+    [_tableV mas_updateConstraints:^(MASConstraintMaker *make) {
+        make.edges.equalTo(self.view);
+    }];
+    
+    
+    
+    UIView *view = [[UIView alloc]initWithFrame:CGRectMake(0, 0, kScreenWidth, Size(730/2))];
+    view.backgroundColor = RGBCOLOR(255, 255, 255);
+    _tableV.tableHeaderView = view;
+    
+    CompanyDetailView *companyV = [[CompanyDetailView alloc]initWithFrame:CGRectZero];
+    [view addSubview:companyV];
+    [companyV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.top.right.mas_offset(0);
+        make.height.mas_equalTo(Size(630/2));
+    }];
+    
+    self.companyV = companyV;
+    
+    _companyIntroBtn = [UIButton ym_ButtonWithFrame:CGRectZero title:@"公司简介" backgroundColor:nil titleColor:COLOR_RGB_51 titleSize:Size(16)];
+    [_companyIntroBtn setTitleColor:COLOR_MAIN_PERSON forState:UIControlStateSelected];
+    [view addSubview:_companyIntroBtn];
+    [_companyIntroBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_offset(0);
+        make.bottom.mas_offset(-Size(9));
+        make.width.mas_equalTo(kScreenWidth/2);
+    }];
+    
+    _recruitJobBtn = [UIButton ym_ButtonWithFrame:CGRectZero title:@"在招职位" backgroundColor:nil titleColor:COLOR_RGB_51 titleSize:Size(16)];
+    [_recruitJobBtn setTitleColor:COLOR_MAIN_PERSON forState:UIControlStateSelected];
+    [view addSubview:_recruitJobBtn];
+    [_recruitJobBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.mas_offset(0);
+        make.bottom.mas_offset(-Size(9));
+        make.width.mas_equalTo(kScreenWidth/2);
+    }];
+    
+    
+    _companyIntroBtn.selected = YES;
+    [_companyIntroBtn addTarget:self action:@selector(doHeaderBtn:) forControlEvents:UIControlEventTouchUpInside];
+    [_recruitJobBtn addTarget:self action:@selector(doHeaderBtn:) forControlEvents:UIControlEventTouchUpInside];
+    
+    UIView *bottomLine = [UIView new];
+    bottomLine.backgroundColor = COLOR_RGB_line;
+    [view addSubview:bottomLine];
+    [bottomLine mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.right.mas_offset(0);
+        make.height.mas_equalTo(0.6);
+        make.bottom.mas_offset(0);
+    }];
+    
+    _btnLine = [[UIView alloc]initWithFrame:CGRectMake(kScreenWidth/4-Size(130/4), view.height-0.5, Size(130/2), 0.5)];
+    _btnLine.backgroundColor = COLOR_MAIN_PERSON;
+    [view addSubview:_btnLine];
+    
+    
+}
+-(void)updateUI{
+    [self.companyV.logoImgV sd_setImageWithURL:[NSURL URLWithString:self.model.data.companyMap.logoUrl] placeholderImage:[UIImage imageNamed:@"前台默认站位图"]];
+    self.companyV.focusCountLab.text = [NSString stringWithFormat:@"%ld位已关注",self.model.data.NumMap.collectNum];//@"128个求职者已关注";
+    self.companyV.nameLab.text = self.model.data.companyMap.company_name;//@"好未来";
+    self.companyV.scoreLab.text = [NSString stringWithFormat:@"%@分",JUDGE_NUll_DEF(self.model.data.scoreMap.totalStar, @"0.0")];//@"4.4分";
+    self.companyV.messageScoreLab.text = JUDGE_NUll_DEF(self.model.data.scoreMap.realStar, @"0.0") ;///@"5.0";
+    self.companyV.environmentScoreLab.text = JUDGE_NUll_DEF(self.model.data.scoreMap.enviStar,@"0.0");//@"4.9";
+    self.companyV.interviewerScoreLab.text = JUDGE_NUll_DEF(self.model.data.scoreMap.interStar,@"0.0");//@"4.8";
+    
+    self.companyV.score = self.model.data.scoreMap.totalStar;
+    self.companyV.markArr = self.model.data.describeList;
+    
+    if ([self.model.data.NumMap.isCollect isEqualToString:@"n"]) {//是否关注(y:没关注,n:已关注)
+        [self.companyV.focusBtn setTitle:@"取消关注" forState:UIControlStateNormal];
+    }else{
+        [self.companyV.focusBtn setTitle:@"关注企业" forState:UIControlStateNormal];
+    }
+    WEAKSELF;
+    self.companyV.focusBtnBlock = ^(UIButton * _Nonnull btn) {
+        NSMutableDictionary *dataDic = [NSMutableDictionary dictionary];
+        [dataDic setValue:weakSelf.companyId forKey:@"companyId"];
+        if ([btn.titleLabel.text isEqualToString:@"取消关注"]) {
+            [dataDic setValue:@"0" forKey:@"type"];//0:取消关注,1:关注
+        }else{
+            [dataDic setValue:@"1" forKey:@"type"];//0:取消关注,1:关注
+        }
+        NSMutableDictionary *paramDic = [NSMutableDictionary dictionary];
+        [paramDic setValue:[dataDic mj_JSONString] forKey:@"data"];
+        [paramDic setValue:AppDelegateInstance.token forKey:@"token"];
+        [[RHNetAPIManager sharedManager]appUserFollowOPT:paramDic].start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+            if (data) {
+                if ([btn.titleLabel.text isEqualToString:@"取消关注"]) {
+                    [HUD showHUDError:nil title:@"已取消"];
+                }else{
+                    [HUD showHUDError:nil title:@"已关注"];
+                }
+                [weakSelf requestDetailData];
+            }
+        });
+    };
+}
+
+#pragma mark - request
+-(void)requestDetailData{
+    NSMutableDictionary *dataDic = [NSMutableDictionary dictionary];
+    [dataDic setValue:self.companyId forKey:@"companyId"];
+    
+    NSMutableDictionary *paramDic = [NSMutableDictionary dictionary];
+    [paramDic setValue:[dataDic mj_JSONString] forKey:@"data"];
+    [paramDic setValue:AppDelegateInstance.token forKey:@"token"];
+    
+    [[RHNetAPIManager sharedManager]appToJumpUserCompanyDetailOPT:paramDic].start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+        if (data) {
+            self.model = [CompanyDetailModel mj_objectWithKeyValues:data];
+            [self updateUI];
+            [self.tableV reloadData];
+        }
+    });
+}
+
+-(void)requestCommentListData{
+    NSMutableDictionary *pageDic = [NSMutableDictionary dictionary];
+    [pageDic setValue:@"1" forKey:@"currPage"];
+    [pageDic setValue:@"3" forKey:@"pageSize"];
+    
+    NSMutableDictionary *dataDic = [NSMutableDictionary dictionary];
+    [dataDic setValue:self.companyId forKey:@"companyId"];
+    
+    NSMutableDictionary *paramDic = [NSMutableDictionary dictionary];
+    [paramDic setValue:[dataDic mj_JSONString] forKey:@"data"];
+    [paramDic setValue:AppDelegateInstance.token forKey:@"token"];
+    [paramDic setValue:[pageDic mj_JSONString] forKey:@"page"];
+    
+    [[RHNetAPIManager sharedManager]appUserFindCommentListOPT:paramDic].start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+        if (data) {
+            self.commentM = [CommentDetailModel mj_objectWithKeyValues:data];
+            
+            
+            [self.tableV reloadData];
+            
+        }
+    });
+}
+
+/**
+ 在招职位
+ */
+-(void)requestJobListData{
+    NSMutableDictionary *pageDic = [NSMutableDictionary dictionary];
+    [pageDic setValue:NSStringFromInteger(_pageNum) forKey:@"currPage"];
+    [pageDic setValue:@"10" forKey:@"pageSize"];
+    
+    NSMutableDictionary *dataDic = [NSMutableDictionary dictionary];
+    [dataDic setValue:self.companyId forKey:@"companyId"];
+    
+    NSMutableDictionary *paramDic = [NSMutableDictionary dictionary];
+    [paramDic setValue:[dataDic mj_JSONString] forKey:@"data"];
+    [paramDic setValue:[pageDic mj_JSONString] forKey:@"page"];
+    [paramDic setValue:AppDelegateInstance.token forKey:@"token"];
+    
+    [[RHNetAPIManager sharedManager]appUserFindPostListOPT:paramDic].start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+        if (data) {
+            RecruitJobModel *model = [RecruitJobModel mj_objectWithKeyValues:data];
+            if (_pageNum == 1) {
+                self.jobDataSource = model.data.list;
+                [self.tableV.mj_header endRefreshing];
+                [self.tableV.mj_footer resetNoMoreData];
+            }else{
+                NSMutableArray *temp = [NSMutableArray arrayWithArray:self.jobDataSource];
+                [temp addObjectsFromArray:model.data.list];
+                self.jobDataSource = [temp copy];
+            }
+            if (model.data.isLastPage) {
+                [self.tableV.mj_footer endRefreshingWithNoMoreData];
+            }else{
+                [self.tableV.mj_header endRefreshing];
+            }
+        }else{
+            [self.tableV.mj_footer endRefreshing];
+            [self.tableV.mj_header endRefreshing];
+        }
+    });
+}
+#pragma mark - action
+
+-(void)doMoreCommentBtn{
+    if (self.commentM.data.comment.list.count == 0) {
+        [HUD showHUDError:nil title:@"暂无评价"];
+        return;
+    }
+    CompanyCommentDetailViewController *vc = [CompanyCommentDetailViewController new];
+    vc.companyId = self.companyId;
+    vc.companyDetailM = self.model;
+    [self.navigationController pushViewController:vc animated:YES];
+}
+-(void)doHeaderBtn:(UIButton *)btn{
+    btn.selected = YES;
+    if ([btn isEqual:self.companyIntroBtn]) {
+        self.recruitJobBtn.selected = NO;
+        _tableV.mj_header = nil;
+        _tableV.mj_footer = nil;
+        
+    }else{
+        self.companyIntroBtn.selected = NO;
+        
+       
+        _tableV.mj_header = [YMRefreshHeader ym_headerWithRefreshingsBlock:^{
+            _pageNum = 1;
+            [self requestJobListData];
+            [self.tableV reloadData];
+        } animated:NO];
+        _tableV.mj_footer = [YMRefreshFooter ym_footerWithRefreshingsBlock:^{
+            _pageNum++;
+            [self requestJobListData];
+            [self.tableV reloadData];
+        } animated:NO];
+        
+    }
+    [UIView animateWithDuration:0.2 animations:^{
+        
+        self.btnLine.centerX = btn.centerX;
+    }];
+    
+    [self.tableV reloadData];
+}
+#pragma mark - tableview delegate
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView{
+    if (self.recruitJobBtn.selected) {
+        return 1;
+    }
+    return 4;
+}
+-(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section{
+    if (self.recruitJobBtn.selected) {
+        return self.jobDataSource.count;
+    }
+    
+    if (section == 3) {
+        return self.commentM.data.comment.list.count;
+    }
+    return 1;
+}
+-(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
+    if (self.recruitJobBtn.selected) {
+        CELL_DEFINE(HomeJobListTableViewCell);
+        cell.list = self.jobDataSource[indexPath.row];
+        cell.score = self.model.data.scoreMap.totalStar;
+        cell.companyLab.text = self.model.data.companyMap.company_name;
+        [cell.logoImgV sd_setImageWithURL:[NSURL URLWithString:self.model.data.companyMap.logoUrl] placeholderImage:[UIImage imageNamed:@"前台默认站位图"]];
+        return cell;
+    }
+    if (indexPath.section == 0) {
+        CELL_DEFINE(CompanyMessageTableViewCell);
+        cell.manageLab.text = self.model.data.companyMap.company_type_str;
+        cell.peopleLab.text = self.model.data.companyMap.scale_str;
+        cell.tradeLab.text = self.model.data.companyMap.describ;
+        cell.addressLab.text = self.model.data.companyMap.company_address;//@"北京市海淀区中淀区中淀区中淀区中淀区中淀区中关村科贸电子城7层";
+        return cell;
+    }
+    if (indexPath.section == 1) {
+        CELL_DEFINE(CompanyIntroTableViewCell);
+        cell.contentLab.text = self.model.data.companyMap.company_describe;
+        [cell.websitBtn setTitle:self.model.data.companyMap.company_host_url forState:UIControlStateNormal];
+        //@"，好未来好未来好未来好未来，\n\n好未来好未来好未来，好未来好未来好未来好未来，好未来好未来好未来，好未来好未来好未来好未来好未来\n\n，好未来好未来好未来好未来好未来，好未来好未来好未来，好未来好未来好未来好未来，好未来好未来";
+        cell.websitBtnBlock = ^(UIButton * _Nonnull btn) {
+            NSString *url =  [self.model.data.companyMap.company_host_url hasPrefix:@"http"] ? self.model.data.companyMap.company_host_url : [NSString stringWithFormat:@"http://%@",self.model.data.companyMap.company_host_url];
+            if (@available(iOS 10.0, *)) {
+                [[UIApplication sharedApplication] openURL:[NSURL URLWithString:url] options:@{} completionHandler:nil];
+            } else {
+                [[UIApplication sharedApplication] openURL:[NSURL URLWithString:url]];
+            }
+        };
+        cell.queryBtnBlock = ^{
+       
+            NSMutableDictionary *dataDic = [NSMutableDictionary dictionary];
+            [dataDic setValue:self.model.data.companyMap.company_name forKey:@"companyName"];
+            
+            NSMutableDictionary *paramDic = [NSMutableDictionary dictionary];
+            [paramDic setValue:[dataDic mj_JSONString] forKey:@"data"];
+            
+            [[RHNetAPIManager sharedManager]appIndustryInfoOPT:paramDic].start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+                //if (data) {
+                    CompanyBusinessInfoViewController *vc = [CompanyBusinessInfoViewController new];
+                    vc.companyDetailM = self.model;
+                    [self.navigationController pushViewController:vc animated:YES];
+//                }
+            });
+            
+            
+        };
+        return cell;
+    }
+    if (indexPath.section == 2) {
+        CELL_DEFINE(CompanyEnvironmentTableViewCell);
+        NSMutableArray *tempImgArr = [NSMutableArray array];
+        for (CompanyDetailImageList *l in self.model.data.imageList) {
+            [tempImgArr addObject:l.imageUrl];
+        }
+        cell.imgArr = tempImgArr;
+        return cell;
+    }
+    if (indexPath.section == 3) {
+        CELL_DEFINE(JobCommentTableViewCell);
+        cell.commentType = commentDetailTypeHome;
+        CommentDetailList *list = self.commentM.data.comment.list[indexPath.row];
+        [cell.headImgV sd_setImageWithURL:[NSURL URLWithString:list.headImageUrl] placeholderImage:[UIImage imageNamed:@"头像"]];
+        cell.nameLab.text = list.real_name;//@"陈**";
+        cell.scoreLab.text = [NSString stringWithFormat:@"%@分",list.totalScore];//@"4.4分";
+        cell.jobLab.text = [NSString stringWithFormat:@"面试岗位：%@",list.job_name];//@"面试岗位：产品经理";
+        cell.commentLab.text = list.content;//@"评论评论评论评论评论评论评论评论评论评论评论评论评论评论评论评论评论";
+        cell.dateLab.text = [[NSDate dateWithTimeIntervalSince1970:list.create_time/1000] stringWithFormat:@"yyyy-MM-dd"];//@"2018-12-22";
+        
+        cell.score = list.totalScore;
+        
+        if ([list.isGood isEqualToString:@"n"]) {//是否点赞(y:否,n:是)
+            cell.likeBtn.selected = YES;
+        }else{
+            cell.likeBtn.selected = NO;
+        }
+        [cell.likeBtn setTitle:NSStringFromInteger(list.goodCounts) forState:UIControlStateNormal];
+        [cell.likeBtn ym_layoutButtonWithEdgeInsetsStyle:MKButtonEdgeInsetsStyleLeft imageTitleSpace:Size(5)];
+       
+        cell.likeBtnBlock = ^(UIButton * _Nonnull btn) {
+            NSMutableDictionary *dataDic = [NSMutableDictionary dictionary];
+            [dataDic setValue:NSStringFromInteger(list.ID) forKey:@"commentId"];
+            if ([list.isGood isEqualToString:@"n"]) {//是否点赞(y否,n是)
+                //type = 1 点赞  type = 0 取消点赞
+                [dataDic setValue:@"0" forKey:@"type"];
+            }else{
+                [dataDic setValue:@"1" forKey:@"type"];
+            }
+            
+            NSMutableDictionary *paramDic = [NSMutableDictionary dictionary];
+            [paramDic setValue:[dataDic mj_JSONString] forKey:@"data"];
+            [paramDic setValue:AppDelegateInstance.token forKey:@"token"];
+            
+            [[RHNetAPIManager sharedManager]appUserGoodCountOPT:paramDic].hiddenLoading().start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+                if (data) {
+                    [self requestCommentListData];
+                }
+            });
+        };
+        return cell;
+    }
+    CELL_DEFINE(UITableViewCell);
+    return cell;
+}
+-(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath{
+    if (self.recruitJobBtn.selected) {
+        return Size(262/2+5);
+    }
+    if (indexPath.section == 0) {
+        CompanyMessageTableViewCell *cell = (CompanyMessageTableViewCell *)[self tableView:tableView cellForRowAtIndexPath:indexPath];
+       CGSize size = [cell.addressLab.text ym_calculateSize:FONT_SIZE_12 maxWidth:kScreenWidth-Size(15+72/2) lineSpacing:2];
+        return size.height+Size(78/2 +16 + 5);
+    }
+    if (indexPath.section == 1) {
+        CompanyIntroTableViewCell *cell = (CompanyIntroTableViewCell *)[self tableView:tableView cellForRowAtIndexPath:indexPath];
+        CGSize size = [cell.contentLab.text ym_calculateSize:[UIFont systemFontOfSize:13] maxWidth:kScreenWidth-Size(30) lineSpacing:2];
+        return size.height+Size(68/2 + 30 + 35 + 20 + 5 + 13);
+    }
+    if (indexPath.section == 2) {
+        return Size(435/2+20+5);
+    }
+    return Size(198/2);
+}
+-(UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section{
+    if (self.recruitJobBtn.selected) {
+        return [UIView new];
+    }
+    if (section == 3) {
+        UIView *view = [[UIView alloc]initWithFrame:CGRectMake(0, 0, kScreenWidth, Size(134/2))];
+        view.backgroundColor = RGBCOLOR(255, 255, 255);
+        
+        UILabel *titleLab = [UILabel ym_labelWithFrame:CGRectZero font:FONT_SIZE_15 textColor:COLOR_RGB_51];
+        [view addSubview:titleLab];
+        [titleLab mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.top.left.mas_offset(Size(15));
+        }];
+        titleLab.text = @"评价详情";
+        
+        UIView *line = [UIView new];
+        line.backgroundColor = COLOR_RGB_line;
+        [view addSubview:line];
+        [line mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.left.equalTo(titleLab.mas_right).mas_offset(Size(8));
+            make.centerY.equalTo(titleLab);
+            make.height.mas_equalTo(0.5);
+            make.width.mas_equalTo(Size(408/2));
+        }];
+        
+        UILabel *countLab = [UILabel ym_labelWithFrame:CGRectZero font:[UIFont systemFontOfSize:Size(13)] textColor:COLOR_RGB_153];
+        [view addSubview:countLab];
+        [countLab mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.left.mas_offset(Size(15));
+            make.top.equalTo(titleLab.mas_bottom).mas_offset(Size(10));
+        }];
+        if (self.commentM.data.comment.list.count == 0) {
+            countLab.text = @"暂无评价";
+        }else{
+            countLab.text = [NSString stringWithFormat:@"共有%ld条评论",self.commentM.data.comment.list.count];
+        }
+        
+        
+        UIButton *moreBtn = [UIButton ym_ButtonWithFrame:CGRectZero title:@"查看更多" backgroundColor:nil titleColor:COLOR_RGB_153 titleSize:Size(13)];
+        [view addSubview:moreBtn];
+        [moreBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.right.mas_offset(Size(-15));
+            make.centerY.equalTo(titleLab);
+        }];
+        [moreBtn setImage:[[UIImage imageNamed:@"left_icon"] ym_scaleToSize:CGSizeMake(Size(6), Size(12))] forState:UIControlStateNormal];
+        [moreBtn ym_layoutButtonWithEdgeInsetsStyle:MKButtonEdgeInsetsStyleRight imageTitleSpace:Size(9)];
+        [moreBtn addTarget:self action:@selector(doMoreCommentBtn) forControlEvents:UIControlEventTouchUpInside];
+        
+        return view;
+    }
+    
+    JobRequireDetailHeaderView *view = [tableView dequeueReusableHeaderFooterViewWithIdentifier:@"JobRequireDetailHeaderV"];
+    if (section == 0) {
+        view.titleLab.text = @"公司信息";
+    }
+    if (section == 1) {
+        view.titleLab.text = @"公司介绍";
+    }
+    if (section == 2) {
+        view.titleLab.text = @"公司环境";
+    }
+    return view;
+}
+-(CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section{
+    if (self.recruitJobBtn.selected) {
+        return CGFLOAT_MIN;
+    }
+    
+    if (section == 3) {
+        return Size(134/2);
+    }
+    return Size(90/2);
+}
+-(UIView *)tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section{
+    return [UIView new];
+}
+-(CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section{
+    return CGFLOAT_MIN;
+}
+-(void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath{
+    if (self.recruitJobBtn.selected) {
+        JobDetailViewController *vc = [JobDetailViewController new];
+        vc.postID = NSStringFromInteger(self.jobDataSource[indexPath.row].ID);
+        vc.companyID = NSStringFromInteger(self.jobDataSource[indexPath.row].company_id);
+        [self.navigationController pushViewController:vc animated:YES];
+    }
+}
+#pragma mark - scroll delegate
+-(void)scrollViewDidScroll:(UIScrollView *)scrollView{
+    
+    //计算滚动的便宜量
+    CGFloat offSetY = scrollView.contentOffset.y;
+    
+    // 处理导航条
+    // 计算当前的透明度
+    CGFloat alpha = offSetY / Size(250/2);
+    self.navigationController.navigationBar.barTintColor = RGBACOLOR(255, 187, 21, alpha);
+    
+    //NSLog(@"%f",offSetY);
+    if (offSetY > Size(250/2)) {
+        [self.navigationController.navigationBar setBackgroundImage:nil forBarMetrics:UIBarMetricsDefault];
+    }else{
+        //[self.navigationController.navigationBar setBackgroundImage:[UIImage new] forBarMetrics:UIBarMetricsDefault];
+        [self.navigationController.navigationBar setBackgroundImage:[UIImage ym_imageWithColor:RGBACOLOR(255, 187, 21, alpha) size:CGSizeMake(kScreenWidth, kNavBarHeight)] forBarMetrics:UIBarMetricsDefault];
+    }
+    
+    
+}
+
+
+/*
+#pragma mark - Navigation
+
+// In a storyboard-based application, you will often want to do a little preparation before navigation
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
+    // Get the new view controller using [segue destinationViewController].
+    // Pass the selected object to the new view controller.
+}
+*/
+
+@end

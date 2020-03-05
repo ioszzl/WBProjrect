@@ -1,0 +1,82 @@
+//
+//  DBHelper.m
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/12/7.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "DBHelper.h"
+#import <FMDB/FMDB.h>
+
+@interface DBHelper()
+@property (nonatomic, strong) FMDatabase *db;
+@end
+
+@implementation DBHelper
+
++ (id)sharedDataBase {
+    static DBHelper *DBHelper = nil;
+    static dispatch_once_t pred;
+    dispatch_once(&pred, ^{
+        DBHelper = [[self alloc] init];
+        [DBHelper initDataBase];
+    });
+    return DBHelper;
+}
+-(void)initDataBase{
+    // 文件路径
+    NSString *filePath = [NSHomeDirectory() stringByAppendingFormat:@"/Documents/%@",@"ChatDB.sqlite"];
+    // 实例化FMDataBase对象
+    _db = [FMDatabase databaseWithPath:filePath];
+    //打开数据库
+    [_db open];
+    // 初始化数据表
+    NSString *personSql = @"CREATE TABLE 'ChatListTB' ('sendId' INTEGER PRIMARY KEY AUTOINCREMENT  NOT NULL ,'nick_name' VARCHAR(255) ,'message' TEXT ,creat_time long)";
+    
+    if ([_db open])
+    {
+        BOOL result = [_db executeUpdate:personSql];
+        if (result)
+        {
+            NSLog(@"创建表成功");
+        }else{
+            NSLog(@"创建表失败");
+            
+        }
+    }
+    
+    
+    //关闭数据库
+    [_db close];
+    
+}
+-(BOOL)addChatListRecord:(MessageList *)list{
+    [_db open];
+    
+    
+    //先判断是否已存在，存在即不添加
+    BOOL isExit = NO;
+        
+    FMResultSet *res = [_db executeQuery:@"SELECT * FROM ChatListTB where sendId = ?",list.sendId];
+    isExit = [res next];
+    
+    BOOL isSuccess;
+    if (isExit) {
+        isSuccess = [_db executeUpdate:@"update ChatListTB set(nick_name, message, creat_time)VALUES(?, ?, ?, ?) where sendId= ?",list.sendPname,list.content,list.createTime, list.sendId];
+    }else{
+       isSuccess = [_db executeUpdate:@"INSERT INTO ChatListTB(sendId, nick_name, message, creat_time)VALUES(?, ?, ?, ?)",list.sendId,list.sendPname,list.content,list.createTime];
+    }
+    
+    
+    [_db close];
+    if (isSuccess) {
+        NSLog(@"添加一条搜索记录成功");
+        return YES;
+    }else{
+        NSLog(@"添加一条搜索记录失败");
+        return NO;
+        
+    }
+}
+@end

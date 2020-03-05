@@ -1,0 +1,29 @@
+//
+//  InterviewReasonAlertView.h
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/16.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+#import "YMTextView.h"
+NS_ASSUME_NONNULL_BEGIN
+
+@interface InterviewReasonAlertView : UIView
+@property (nonatomic, strong) UILabel *titleLabel;
+@property (nonatomic, strong) UILabel *nameLab;
+@property (nonatomic, strong) UILabel *phoneLab;
+@property (nonatomic, strong) UILabel *positionLab;
+
+@property (nonatomic, strong) YMTextView *reasonTextV;
+
+@property (nonatomic, strong) NSArray *btnTitleArr;
+@property (nonatomic, copy) void(^buttonClick)(NSInteger index, NSString *reasonText);
+
++(instancetype)interViewReasonAlertWithTitle:(NSString *)title name:(NSString *)name phone:(NSString *)phone position:(NSString *)position btnTitleArr:(NSArray *)btnTitleArr btnBlock:(void(^)(NSInteger index, NSString *reasonText))block;
+
+-(void)show;
+@end
+
+NS_ASSUME_NONNULL_END

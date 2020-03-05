@@ -1,0 +1,21 @@
+//
+//  PositionListModel.m
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/29.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "PositionListModel.h"
+
+@implementation PositionListModel
+
+@end
+@implementation PositionList
+
+@end
+@implementation PositionListData
++(NSDictionary *)mj_objectClassInArray{
+    return @{@"list":[PositionList class]};
+}
+@end

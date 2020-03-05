@@ -1,0 +1,526 @@
+//
+//  ResumeMineInfoViewController.m
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/10.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "ResumeMineInfoViewController.h"
+#import "MineInfoTableViewCell.h"
+#import "YMTextView.h"
+#import "ResumeUserInfoModel.h"
+#import "CLAlertView.h"
+#import <Photos/Photos.h>
+#import "YMDatePickerView.h"
+#import "YMAddressPickView.h"
+@interface ResumeMineInfoViewController ()<UITableViewDelegate,UITableViewDataSource,UITextFieldDelegate,UITextViewDelegate,UIImagePickerControllerDelegate,UINavigationControllerDelegate>
+@property (nonatomic, strong) UITableView *tableV;
+
+@property (nonatomic, strong) UITextField *nameTF;
+@property (nonatomic, strong) UITextField *phoneTF;
+@property (nonatomic, strong) UITextField *emailTF;
+@property (nonatomic, strong) YMTextView *introTextV;
+
+@property (nonatomic, strong) UIImageView *headImgV;
+
+@property (nonatomic, strong) ResumeUserInfoModel *model;
+@property (nonatomic, strong) ResumeUserInfoData *dataSourceM;
+
+@end
+
+@implementation ResumeMineInfoViewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    [self initUI];
+    [self requestInitData];
+}
+-(void)initUI{
+    self.title = @"个人信息";
+    
+    UIBarButtonItem *item = [[UIBarButtonItem alloc]initWithTitle:@"保存" style:UIBarButtonItemStyleDone target:self action:@selector(doSaveBarItem)];
+    self.navigationItem.rightBarButtonItem = item;
+
+    _tableV = [[UITableView alloc]initWithFrame:CGRectZero style:UITableViewStyleGrouped];
+    
+    _tableV.separatorStyle = UITableViewCellSeparatorStyleNone;
+    _tableV.showsVerticalScrollIndicator = NO;
+    _tableV.showsHorizontalScrollIndicator = NO;
+    _tableV.backgroundColor = COLOR_BG;
+    _tableV.dataSource = self;
+    _tableV.delegate = self;
+    [self.view addSubview:_tableV];
+    [_tableV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.edges.equalTo(self.view);
+    }];
+    _tableV.rowHeight = Size(120/2);
+}
+#pragma mark - request
+-(void)requestInitData{
+    
+    NSMutableDictionary *paramDic = [NSMutableDictionary dictionary];
+    [paramDic setValue:AppDelegateInstance.token forKey:@"token"];
+    
+    [[RHNetAPIManager sharedManager]appResumeUserInfoOPT:paramDic].start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+        if (data) {
+            self.model = [ResumeUserInfoModel mj_objectWithKeyValues:data];
+            self.dataSourceM = self.model.data;
+            [self.tableV reloadData];
+        }
+    });
+}
+#pragma mark - action
+-(void)doSaveBarItem{
+    if (self.dataSourceM.fresh_graduates.length == 0) {
+        [HUD showHUDError:nil title:@"请选择是否应届生"];
+        return;
+    }
+    if (self.dataSourceM.want_job_status.length == 0) {
+        [HUD showHUDError:nil title:@"请选择求职状态"];
+        return;
+    }
+    if (self.dataSourceM.position_id == 0) {
+        [HUD showHUDError:nil title:@"请选择居住地"];
+        return;
+    }
+    if (self.dataSourceM.email.length == 0) {
+        [HUD showHUDError:nil title:@"请填写邮箱"];
+        return;
+    }
+    
+    NSMutableDictionary *dataDic = [NSMutableDictionary dictionary];
+    [dataDic setValue:self.resumeId forKey:@"resumeId"];
+    [dataDic setValue:self.ID forKey:@"id"];
+    [dataDic setValue:self.dataSourceM.real_name forKey:@"realName"];
+    [dataDic setValue:self.dataSourceM.sex forKey:@"sex"];
+    [dataDic setValue:[[NSDate dateWithTimeIntervalSince1970:self.dataSourceM.brithday/1000] stringWithFormat:@"yyyy-MM-dd"] forKey:@"brithday"];
+    [dataDic setValue:self.dataSourceM.want_job_status forKey:@"wantJobStatus"];
+    [dataDic setValue:self.dataSourceM.ceil_phone forKey:@"ceilPhone"];
+    [dataDic setValue:self.dataSourceM.email forKey:@"email"];
+    [dataDic setValue:self.dataSourceM.fresh_graduates forKey:@"freshGraduates"];
+    [dataDic setValue:[[NSDate dateWithTimeIntervalSince1970:self.dataSourceM.start_work_time/1000] stringWithFormat:@"yyyy-MM-dd"] forKey:@"startWorkTime"];
+    [dataDic setValue:NSStringFromInteger(self.dataSourceM.position_id) forKey:@"positionId"];
+    [dataDic setValue:self.dataSourceM.person_describ forKey:@"personDescrib"];
+    [dataDic setValue:self.dataSourceM.head_pic forKey:@"headPic"];
+    [dataDic setValue:NSStringFromInteger(self.dataSourceM.head_pic_img_id) forKey:@"headPicImgId"];
+    
+    NSMutableDictionary *paramDic = [NSMutableDictionary dictionary];
+    [paramDic setValue:[dataDic mj_JSONString] forKey:@"data"];
+    [paramDic setValue:AppDelegateInstance.token forKey:@"token"];
+    
+    [[RHNetAPIManager sharedManager]appEditBaseInfoOPT:paramDic].start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+        if (data) {
+            [HUD showHUDError:nil title:msg];
+            [self.navigationController popViewControllerAnimated:YES];
+        }
+    });
+}
+
+
+#pragma mark - tableView delegate
+-(NSInteger)numberOfSectionsInTableView:(UITableView *)tableView{
+    return 3;
+}
+-(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section{
+    if (section == 0) {
+        return 4;
+    }else if (section == 1){
+        if (self.dataSourceM.fresh_graduates.integerValue == 0) {
+            return 4;
+        }
+        return 3;
+    }
+    return 2;
+}
+-(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
+    if (indexPath.section == 0) {
+        switch (indexPath.row) {
+            case 0:{
+                CELL_DEFINE(MineInfoTableViewCell,
+                            cell.textF.hidden = YES;
+                            UIImageView *headImgV = [UIImageView new];
+                            headImgV.layer.cornerRadius = Size(82/4);
+                            headImgV.clipsToBounds = YES;
+                            [cell.contentView addSubview:headImgV];
+                            [headImgV mas_makeConstraints:^(MASConstraintMaker *make) {
+                    make.right.equalTo(cell.arrowImgV.mas_left).mas_offset(-Size(15));
+                    make.centerY.equalTo(cell.contentView);
+                    make.height.width.mas_equalTo(Size(82/2));
+                }];
+                            
+                            self.headImgV = headImgV;
+                            );
+                cell.titleLab.text = @"头像";
+                [self.headImgV sd_setImageWithURL:[NSURL URLWithString:self.dataSourceM.head_pic] placeholderImage:[UIImage imageNamed:@"头像"]];
+                //self.headImgV.image = [UIImage imageNamed:@"个人中心头像"];
+                return cell;
+            }
+                break;
+            case 1:{
+                CELL_DEFINE(MineInfoTableViewCell);
+                cell.textF.enabled = YES;
+                cell.titleLab.text = @"名字";
+                cell.textF.placeholder = @"请输入";
+                cell.textF.text = self.dataSourceM.real_name;
+                self.nameTF = cell.textF;
+                self.nameTF.delegate = self;
+                return cell;
+            }
+                break;
+            case 2:
+            case 3:{
+                CELL_DEFINE(MineInfoTableViewCell);
+                cell.textF.enabled = NO;
+                if (indexPath.row == 2) {
+                    cell.titleLab.text = @"性别";
+                    cell.textF.placeholder = @"请选择";
+                    if ([self.dataSourceM.sex isEqualToString:@"0"]) {
+                        cell.textF.text = @"男";
+                    }else if ([self.dataSourceM.sex isEqualToString:@"1"]){
+                        cell.textF.text =@"女";
+                    }
+                    
+                }else{
+                    cell.titleLab.text = @"出生日期";
+                    cell.textF.placeholder = @"请选择";
+                    if (self.dataSourceM.brithday == 0) {
+                        cell.textF.text = @"";
+                    }else{
+                        cell.textF.text = [[NSDate dateWithTimeIntervalSince1970:self.dataSourceM.brithday/1000] stringWithFormat:@"yyyy-MM-dd"];
+                    }
+                    
+                }
+                return cell;
+            }
+                break;
+            default:
+                break;
+        }
+        
+    }
+    if (indexPath.section == 1) {
+        CELL_DEFINE(MineInfoTableViewCell);
+        cell.textF.enabled = NO;
+        cell.textF.placeholder = @"请选择";
+        switch (indexPath.row) {
+            case 0:
+                cell.titleLab.text = @"是否应届生";
+                if ([self.dataSourceM.fresh_graduates isEqualToString:@"0"]) {
+                    cell.textF.text = @"否";
+                }else if ([self.dataSourceM.fresh_graduates isEqualToString:@"1"]){
+                    cell.textF.text = @"是";
+                }
+                
+                break;
+            case 1:{
+                if (self.dataSourceM.fresh_graduates.integerValue == 0) {//非应届生
+                    cell.titleLab.text = @"开始工作时间";
+                    if (self.dataSourceM.start_work_time == 0) {
+                        cell.textF.text = @"";
+                    }else{
+                        cell.textF.text = [[NSDate dateWithTimeIntervalSince1970:self.dataSourceM.start_work_time/1000] stringWithFormat:@"yyyy-MM-dd"];
+                    }
+                    
+                }else{
+                    cell.titleLab.text = @"求职状态";
+                    if ([self.dataSourceM.want_job_status isEqualToString:@"0"]) {
+                        cell.textF.text = @"正在找工作";
+                    }else if ([self.dataSourceM.want_job_status isEqualToString:@"1"]){
+                        cell.textF.text = @"已入职";
+                    }
+                }
+            }
+                break;
+            case 2:{
+                if (self.dataSourceM.fresh_graduates.integerValue == 0) {//非应届生
+                    cell.titleLab.text = @"求职状态";
+                    if ([self.dataSourceM.want_job_status isEqualToString:@"0"]) {
+                        cell.textF.text = @"正在找工作";
+                    }else if ([self.dataSourceM.want_job_status isEqualToString:@"1"]){
+                        cell.textF.text = @"已入职";
+                    }
+                    
+                }else{
+                    cell.titleLab.text = @"居住地";
+                    cell.textF.text = self.dataSourceM.position_name;
+                }
+                
+            }
+                break;
+            case 3:
+                cell.titleLab.text = @"居住地";
+                cell.textF.text = self.dataSourceM.position_name;
+                break;
+            default:
+                break;
+        }
+        return cell;
+    }
+    if (indexPath.section == 2 ) {
+        CELL_DEFINE(MineInfoTableViewCell);
+        cell.textF.hidden = NO;
+        cell.arrowImgV.hidden = NO;
+        switch (indexPath.row) {
+            case 0:
+                cell.titleLab.text = @"手机号码";
+                cell.textF.placeholder = @"请输入";
+                cell.textF.text = self.dataSourceM.ceil_phone;
+                self.phoneTF = cell.textF;
+                self.phoneTF.delegate = self;
+                break;
+            case 1:
+                cell.titleLab.text = @"邮箱地址";
+                cell.textF.placeholder = @"请输入";
+                cell.textF.text = self.dataSourceM.email;
+                self.emailTF = cell.textF;
+                self.emailTF.delegate = self;
+                break;
+            
+            default:
+                break;
+        }
+        return cell;
+    }
+    
+    CELL_DEFINE(UITableViewCell);
+    return cell;
+}
+-(UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section{
+    return [UIView new];
+}
+-(CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section{
+    return CGFLOAT_MIN;
+}
+-(UIView *)tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section{
+    if (section == 2) {
+        UIView *view = [[UIView alloc]initWithFrame:CGRectMake(0, 0, kScreenWidth, Size(120))];
+        view.backgroundColor = RGBCOLOR(255, 255, 255);
+        
+        UILabel *itemLab = [UILabel ym_labelWithFrame:CGRectZero font:FONT_SIZE_15 textColor:COLOR_RGB_51];
+        itemLab.text = @"个人简介";
+        [view addSubview:itemLab];
+        [itemLab mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.left.mas_offset(Size(15));
+            make.top.mas_offset(Size(20));
+        }];
+        
+        YMTextView *introTextV = [YMTextView new];
+        introTextV.textAlignment = NSTextAlignmentCenter;
+        introTextV.placeholder = @"用一句话介绍自己";
+        introTextV.layer.borderWidth = 0.5;
+        introTextV.layer.borderColor = COLOR_RGB_line.CGColor;
+        introTextV.textColor = COLOR_RGB_51;
+        introTextV.font = FONT_SIZE_15;
+        [view addSubview:introTextV];
+        [introTextV mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.left.mas_offset(Size(15));
+            make.right.mas_offset(-Size(15));
+            make.top.equalTo(itemLab.mas_bottom).mas_offset(13);
+            make.height.mas_equalTo(Size(120/2));
+        }];
+        self.introTextV = introTextV;
+        self.introTextV.delegate = self;
+        self.introTextV.text = self.dataSourceM.person_describ;
+        
+        
+        return view;
+    }
+    return [UIView new];
+}
+-(CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section{
+    if (section == 2) {
+        return Size(120);
+    }
+    return Size(10);
+}
+-(void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath{
+    [self.view endEditing:YES];
+    MineInfoTableViewCell *cell = (MineInfoTableViewCell *)[tableView cellForRowAtIndexPath:indexPath];
+    if ([cell.titleLab.text isEqualToString:@"头像"]) {
+        CLAlertView *alertV = [CLAlertView globeBottomView];
+        alertV.titleArray = @[@"拍照",@"选择相册"];
+        alertV.title = @"上传图片";
+        [alertV show];
+        alertV.globeBottomView = ^(NSInteger index, NSString *string) {
+            
+            //初始化UIImagePickerController类
+            UIImagePickerController * picker = [[UIImagePickerController alloc] init];
+            //picker.
+            //设置代理
+            picker.delegate = self;
+            
+            if (index == 1) {//相册
+                [PHPhotoLibrary requestAuthorization:^(PHAuthorizationStatus status) {
+                    NSLog(@"status == %ld",(long)status);
+                    //未授权
+                    if (status == PHAuthorizationStatusDenied ||
+                        status == PHAuthorizationStatusRestricted){
+                        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"提示" message:@"请前往设置->隐私->相册 授权应用访问相册权限" preferredStyle:UIAlertControllerStyleAlert];
+                        UIAlertAction *aleAc = [UIAlertAction actionWithTitle:@"确定" style:UIAlertActionStyleDefault handler:nil];
+                        [alert addAction:aleAc];
+                        dispatch_sync(dispatch_get_main_queue(), ^{
+                            [self.navigationController presentViewController:alert animated:YES completion:nil];
+                        });
+                        
+                        
+                    }else{
+                        
+                        picker.sourceType = UIImagePickerControllerSourceTypeSavedPhotosAlbum;
+                        dispatch_sync(dispatch_get_main_queue(), ^{
+                            [self.navigationController presentViewController:picker animated:YES completion:nil];
+                        });
+                    }
+                }];
+                
+            }
+            if(index == 0){//相机
+                //判断是否有相机
+                if([UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera]){
+                    //请求授权
+                    [AVCaptureDevice requestAccessForMediaType:AVMediaTypeVideo completionHandler:^(BOOL granted) {
+                        if (!granted) {//不允许使用相机
+                            UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"提示" message:@"请前往设置->隐私->相机 授权应用使用相机权限" preferredStyle:UIAlertControllerStyleAlert];
+                            UIAlertAction *aleAc = [UIAlertAction actionWithTitle:@"确定" style:UIAlertActionStyleDefault handler:nil];
+                            [alert addAction:aleAc];
+                            [self.navigationController presentViewController:alert animated:YES completion:nil];
+                        }else{//允许使用相机
+                            picker.sourceType = UIImagePickerControllerSourceTypeCamera;
+                            [self.navigationController presentViewController:picker animated:YES completion:nil];
+                        }
+                    }];
+                    
+                }else{
+                    [HUD showHUDError:nil title:@"该设备不支持拍照"];
+                }
+                
+            }
+            
+        };
+    }
+    if ([cell.titleLab.text isEqualToString:@"性别"]) {
+        CLAlertView *alert = [CLAlertView globeBottomView];
+        alert.title = @"性别";
+        alert.titleArray = @[@"男", @"女"];
+        alert.globeBottomView = ^(NSInteger index, NSString *string) {
+            
+            self.dataSourceM.sex = NSStringFromInteger(index);
+            [self.tableV reloadData];
+        };
+        [alert show];
+    }
+    if ([cell.titleLab.text isEqualToString:@"出生日期"]) {
+        YMDatePickerView *pick = [[YMDatePickerView alloc]initWithUI:0 y:kScreenHeight-250 width:kScreenWidth height:250];
+        pick.datePickerStyle = DateStyleShowYearMonthDay;
+        [pick getNowDate:[NSDate dateWithTimeIntervalSince1970:self.dataSourceM.brithday/1000] animated:NO];
+        pick.doneBlock = ^(NSDate *date) {
+            self.dataSourceM.brithday = [date timeIntervalSince1970]*1000;
+            [self.tableV reloadData];
+        };
+        [pick show];
+    }
+    if ([cell.titleLab.text isEqualToString:@"是否应届生"]) {
+        CLAlertView *alert = [CLAlertView globeBottomView];
+        alert.title = @"是否应届";
+        alert.titleArray = @[@"否", @"是"];
+        alert.globeBottomView = ^(NSInteger index, NSString *string) {
+            
+            self.dataSourceM.fresh_graduates = NSStringFromInteger(index);
+            [self.tableV reloadData];
+        };
+        [alert show];
+    }
+    if ([cell.titleLab.text isEqualToString:@"开始工作时间"]) {
+        YMDatePickerView *pick = [[YMDatePickerView alloc]initWithUI:0 y:kScreenHeight-250 width:kScreenWidth height:250];
+        pick.datePickerStyle = DateStyleShowYearMonthDay;
+        [pick getNowDate:[NSDate dateWithTimeIntervalSince1970:self.dataSourceM.start_work_time/1000] animated:NO];
+        pick.doneBlock = ^(NSDate *date) {
+            self.dataSourceM.start_work_time = [date timeIntervalSince1970]*1000;
+            [self.tableV reloadData];
+        };
+        [pick show];
+    }
+    if ([cell.titleLab.text isEqualToString:@"求职状态"]) {
+        CLAlertView *alert = [CLAlertView globeBottomView];
+        alert.title = @"求职状态";
+        alert.titleArray = @[@"正在找工作", @"已入职"];
+        alert.globeBottomView = ^(NSInteger index, NSString *string) {
+            
+            self.dataSourceM.want_job_status = NSStringFromInteger(index);
+            [self.tableV reloadData];
+        };
+        [alert show];
+    }
+    if ([cell.titleLab.text isEqualToString:@"居住地"]) {
+        YMAddressPickView *pick = [[YMAddressPickView alloc]initWithUI:0 y:kScreenHeight width:kScreenWidth height:250];
+        pick.AdressBlock = ^(NSString *province, NSString *city, NSString *town, NSString *pid, NSString *cid, NSString *tid) {
+            self.dataSourceM.position_id = tid.integerValue;
+            self.dataSourceM.position_name = town;
+            [self.tableV reloadData];
+        };
+        [pick showBottomView];
+    }
+}
+
+//选择完成回调函数
+- (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary<NSString *,id> *)info{
+    //获取图片
+    UIImage *image = info[UIImagePickerControllerOriginalImage];
+    NSData *data = UIImageJPEGRepresentation(image, 1);
+    NSString *base64str;
+    if (data.length/1024.0 > 10240) {
+        NSData *ddata = [image ym_compressQualityWithMaxLength:10*1024*1024];
+        NSLog(@"原：%fKB  压：%fKB",data.length/1024.0, ddata.length/1024.0);
+        base64str = [[UIImage imageWithData:ddata] ym_base64String];
+    }
+    else {
+        base64str = [[UIImage imageWithData:data] ym_base64String];
+    }
+    
+        NSMutableDictionary *paramDic = [NSMutableDictionary dictionary];
+        [paramDic setValue:@"head.jpg" forKey:@"picName"];
+        [paramDic setValue:base64str forKey:@"imgurl"];
+    [[RHNetAPIManager sharedManager]appUploadFileOPT:paramDic].start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+      
+            if (data) {
+                self.dataSourceM.head_pic = data[@"data"][@"imgUrl"];
+                self.dataSourceM.head_pic_img_id = [data[@"data"][@"tCjImgSource"][@"id"] integerValue];
+                [self dismissViewControllerAnimated:YES completion:nil];
+                [self.tableV reloadData];
+            }
+            [self dismissViewControllerAnimated:YES completion:nil];
+        });
+    
+}
+
+#pragma mark - textView / textField  delegate
+-(void)textFieldDidEndEditing:(UITextField *)textField{
+    if (textField == self.nameTF) {
+        self.dataSourceM.real_name = textField.text;
+    }
+    if (textField == self.phoneTF) {
+        self.dataSourceM.ceil_phone = textField.text;
+    }
+    if (textField == self.emailTF) {
+        self.dataSourceM.email = textField.text;
+    }
+}
+-(void)textViewDidEndEditing:(UITextView *)textView{
+    if ([textView isEqual:self.introTextV]) {
+        self.dataSourceM.person_describ = textView.text;
+    }
+}
+
+/*
+#pragma mark - Navigation
+
+// In a storyboard-based application, you will often want to do a little preparation before navigation
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
+    // Get the new view controller using [segue destinationViewController].
+    // Pass the selected object to the new view controller.
+}
+*/
+
+@end

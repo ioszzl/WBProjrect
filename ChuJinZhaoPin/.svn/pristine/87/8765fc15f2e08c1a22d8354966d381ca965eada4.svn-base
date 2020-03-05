@@ -1,0 +1,26 @@
+//
+//  ResumeMineInfoView.h
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/9.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+
+NS_ASSUME_NONNULL_BEGIN
+
+@interface ResumeMineInfoView : UIView
+@property (nonatomic, strong) UIImageView *headImgV;
+@property (nonatomic, strong) UIButton *editInfoBtn;
+@property (nonatomic, strong) UILabel *nameLab;
+@property (nonatomic, strong) UILabel *genderLab;
+@property (nonatomic, strong) UILabel *ageLab;
+@property (nonatomic, strong) UILabel *educationLab;
+@property (nonatomic, strong) UIButton *phoneBtn;
+@property (nonatomic, strong) UIButton *emailBtn;
+
+@property (nonatomic, copy) void(^editInfoBlock)(void);
+@end
+
+NS_ASSUME_NONNULL_END

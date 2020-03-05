@@ -1,0 +1,236 @@
+//
+//  CompanyBusinessInfoViewController.m
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/15.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "CompanyBusinessInfoViewController.h"
+#import "JobRequireDetailHeaderView.h"
+#import "CompanyDetailView.h"
+#import "MineInfoTableViewCell.h"
+@interface CompanyBusinessInfoViewController ()<UITableViewDataSource,UITableViewDelegate>
+@property (nonatomic, strong) UITableView *tableV;
+@property (nonatomic, strong) CompanyDetailView *companyV;
+
+@property (nonatomic, strong) CompanyBusinessInfoModelItems *infoItem;
+@end
+
+@implementation CompanyBusinessInfoViewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    [self initUI];
+    [self updateUI];
+}
+-(void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    
+    self.navigationController.navigationBar.translucent = YES;
+    [self.navigationController.navigationBar setBackgroundImage:[UIImage new] forBarMetrics:UIBarMetricsDefault];
+    [self.navigationController.navigationBar setShadowImage:[UIImage new]];
+    
+}
+-(void)viewWillDisappear:(BOOL)animated {
+    [super viewWillDisappear:animated];
+    
+    self.navigationController.navigationBar.translucent = NO;
+    [self.navigationController.navigationBar setBackgroundImage:nil forBarMetrics:UIBarMetricsDefault];
+    [self.navigationController.navigationBar setShadowImage:nil];
+    
+}
+-(void)initUI{
+    _tableV = [[UITableView alloc]initWithFrame:CGRectZero style:UITableViewStyleGrouped];
+    _tableV.tableFooterView = [UIView new];
+    _tableV.separatorStyle = UITableViewCellSeparatorStyleNone;
+    _tableV.showsVerticalScrollIndicator = NO;
+    _tableV.showsHorizontalScrollIndicator = NO;
+    _tableV.backgroundColor = COLOR_BG;
+    _tableV.dataSource = self;
+    _tableV.delegate = self;
+    [_tableV registerClass:[JobRequireDetailHeaderView class] forHeaderFooterViewReuseIdentifier:@"companyInfoHeaderV"];
+    if (@available(iOS 11.0, *)) {
+        _tableV.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
+    } else {
+        self.automaticallyAdjustsScrollViewInsets = NO;
+        // Fallback on earlier versions
+    }
+    [self.view addSubview:_tableV];
+    [_tableV mas_updateConstraints:^(MASConstraintMaker *make) {
+        make.edges.equalTo(self.view);
+    }];
+    
+    UIView *view = [[UIView alloc]initWithFrame:CGRectMake(0, 0, kScreenWidth, Size(630/2+20))];
+    view.backgroundColor = RGBCOLOR(255, 255, 255);
+    _tableV.tableHeaderView = view;
+    
+    CompanyDetailView *companyV = [[CompanyDetailView alloc]initWithFrame:CGRectZero];
+    companyV.focusBtn.hidden = YES;
+    [view addSubview:companyV];
+    [companyV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.top.right.mas_offset(0);
+        make.height.mas_equalTo(Size(630/2));
+    }];
+    self.companyV = companyV;
+}
+
+-(void)updateUI{
+    
+    if (self.companyDetailInfoM) {
+        
+        [self.companyV.logoImgV sd_setImageWithURL:[NSURL URLWithString:self.companyDetailInfoM.data.logoUrl] placeholderImage:[UIImage imageNamed:@"前台默认站位图"]];
+        self.companyV.focusCountLab.text = [NSString stringWithFormat:@"%ld位已关注",self.companyDetailInfoM.data.postNum];//@"128个求职者已关注";
+        self.companyV.nameLab.text = self.companyDetailInfoM.data.company_name;//@"好未来";
+        self.companyV.scoreLab.text = [NSString stringWithFormat:@"%@分",JUDGE_NUll_DEF(self.companyDetailInfoM.data.scoreMap.totalStar, @"0.0")];//@"4.4分";
+        self.companyV.messageScoreLab.text = JUDGE_NUll_DEF(self.companyDetailInfoM.data.scoreMap.realStar, @"0.0") ;///@"5.0";
+        self.companyV.environmentScoreLab.text = JUDGE_NUll_DEF(self.companyDetailInfoM.data.scoreMap.enviStar,@"0.0");//@"4.9";
+        self.companyV.interviewerScoreLab.text = JUDGE_NUll_DEF(self.companyDetailInfoM.data.scoreMap.interStar,@"0.0");//@"4.8";
+        
+        self.companyV.score = self.companyDetailInfoM.data.scoreMap.totalStar;
+        self.companyV.markArr = self.companyDetailInfoM.data.describeList;
+    }
+    
+    if (self.companyDetailM){
+        
+        [self.companyV.logoImgV sd_setImageWithURL:[NSURL URLWithString:self.companyDetailM.data.companyMap.logoUrl] placeholderImage:[UIImage imageNamed:@"前台默认站位图"]];
+        self.companyV.focusCountLab.text = [NSString stringWithFormat:@"%ld位已关注",self.companyDetailM.data.NumMap.collectNum];//@"128个求职者已关注";
+        self.companyV.nameLab.text = self.companyDetailM.data.companyMap.company_name;//@"好未来";
+        self.companyV.scoreLab.text = [NSString stringWithFormat:@"%@分",JUDGE_NUll_DEF(self.companyDetailM.data.scoreMap.totalStar, @"0.0")];//@"4.4分";
+        self.companyV.messageScoreLab.text = JUDGE_NUll_DEF(self.companyDetailM.data.scoreMap.realStar, @"0.0") ;///@"5.0";
+        self.companyV.environmentScoreLab.text = JUDGE_NUll_DEF(self.companyDetailM.data.scoreMap.enviStar,@"0.0");//@"4.9";
+        self.companyV.interviewerScoreLab.text = JUDGE_NUll_DEF(self.companyDetailM.data.scoreMap.interStar,@"0.0");//@"4.8";
+        
+        self.companyV.score = self.companyDetailM.data.scoreMap.totalStar;
+        self.companyV.markArr = self.companyDetailM.data.describeList;
+    }
+    
+    if (self.bussinessDic) {
+        self.infoItem = [[CompanyBusinessInfoModel mj_objectWithKeyValues:self.bussinessDic].data.result.items firstObject];
+        [self.tableV reloadData];
+    }
+}
+#pragma mark - request
+
+#pragma mark - tableview delegate
+
+-(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section{
+    
+    return 7;
+}
+-(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
+    CELL_DEFINE(MineInfoTableViewCell);
+    cell.arrowImgV.hidden = YES;
+    cell.line.hidden = NO;
+    
+    [cell.textF mas_remakeConstraints:^(MASConstraintMaker *make) {
+        make.right.mas_offset(-Size(15));
+        make.centerY.equalTo(cell.contentView);
+        make.left.offset(Size(200/2));
+    }];
+    cell.textF.textAlignment = NSTextAlignmentLeft;
+    cell.textF.adjustsFontSizeToFitWidth = YES;
+    cell.textF.minimumFontSize = Size(5);
+    cell.textF.enabled = NO;
+    
+    switch (indexPath.row) {
+        case 0:
+            cell.titleLab.text = @"注册资金:";
+            cell.textF.text = self.infoItem.regCapital;//@"500万人民币";
+            break;
+        case 1:
+            cell.titleLab.text = @"公司名:";
+            cell.textF.text = self.infoItem.name;//@"好未来科技有限公司";
+            break;
+        case 2:
+            cell.titleLab.text = @"省份:";
+            cell.textF.text = self.infoItem.base;//@"广东";
+            break;
+        case 3:
+            cell.titleLab.text = @"公司类型:";
+            switch (self.infoItem.companyType) {
+                case 1:
+                    cell.textF.text = @"公司";
+                    break;
+                case 2:
+                    cell.textF.text = @"香港公司";
+                    break;
+                case 3:
+                    cell.textF.text = @"社会组织";
+                    break;
+                case 4:
+                    cell.textF.text = @"律所";
+                    break;
+                case 5:
+                    cell.textF.text = @"事业单位";
+                    break;
+                case 6:
+                    cell.textF.text = @"基金会";
+                    break;
+                default:
+                    break;
+            }
+            //@"公司";
+            break;
+        case 4:
+            cell.titleLab.text = @"开业时间:";
+            cell.textF.text = self.infoItem.estiblishTime;//@"2018-10-24";
+            break;
+        case 5:
+            cell.titleLab.text = @"法人:";
+            cell.textF.text = self.infoItem.legalPersonName;//@"法人代表";
+            break;
+        case 6:
+            cell.titleLab.text = @"类型:";
+            switch (self.infoItem.type) {
+                case 1:
+                    cell.textF.text = @"人";//@"公司";
+                    break;
+                case 2:
+                    cell.textF.text = @"公司";//@"公司";
+                    break;
+                default:
+                    break;
+            }
+            
+            break;
+        default:
+            break;
+    }
+    return cell;
+}
+-(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath{
+    return Size(120/2);
+}
+
+
+/*
+#pragma mark - Navigation
+
+// In a storyboard-based application, you will often want to do a little preparation before navigation
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
+    // Get the new view controller using [segue destinationViewController].
+    // Pass the selected object to the new view controller.
+}
+*/
+
+@end
+
+
+@implementation CompanyBusinessInfoModelItems
+
+@end
+@implementation CompanyBusinessInfoModelResult
++(NSDictionary *)mj_objectClassInArray{
+    return @{@"items":[CompanyBusinessInfoModelItems class]};
+}
+
+@end
+@implementation CompanyBusinessInfoModelData
+
+@end
+@implementation CompanyBusinessInfoModel
+
+@end

@@ -1,0 +1,43 @@
+//
+//  MineInfoModel.h
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/23.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "BaseModel.h"
+
+NS_ASSUME_NONNULL_BEGIN
+@interface MineInfoData :NSObject
+@property (nonatomic , assign) NSInteger              userId;//用户id
+@property (nonatomic , copy) NSString              * head_pic_img_id;
+@property (nonatomic , assign) NSInteger              create_time;
+@property (nonatomic , assign) NSInteger              def_file_resume_id;
+@property (nonatomic , copy) NSString              * sex;//性别(0.男 1.女)
+@property (nonatomic , copy) NSString              * want_job_status;//求职状态 0，正在找工作 1，已入职
+@property (nonatomic , copy) NSString              * start_work_time;//开始工作时间
+@property (nonatomic , copy) NSString              * position_name;//居住地
+@property (nonatomic , copy) NSString              * max_edu_level;
+@property (nonatomic , assign) NSInteger              work_year_id;
+@property (nonatomic , copy) NSString              * position_id;//居住地id
+@property (nonatomic , copy) NSString              * fresh_graduates;//应届毕业 0，否 1，是
+@property (nonatomic , assign) NSInteger              ID;
+@property (nonatomic , copy) NSString              * head_pic;//头像url
+@property (nonatomic , copy) NSString              * ceil_phone;//联系电话
+@property (nonatomic , copy) NSString              * email;//电子邮箱
+@property (nonatomic , copy) NSString              * phone;//注册手机号
+@property (nonatomic , copy) NSString              * person_describ;//个人描述
+@property (nonatomic , assign) NSInteger              def_resume_id;//默认简历id
+@property (nonatomic , copy) NSString              * brithday;//生日
+@property (nonatomic , copy) NSString              * real_name;//姓名
+@property (nonatomic , copy) NSString              * is_deleted;
+
+@end
+
+
+@interface MineInfoModel : BaseModel
+@property (nonatomic , strong) MineInfoData              * data;
+@end
+
+NS_ASSUME_NONNULL_END

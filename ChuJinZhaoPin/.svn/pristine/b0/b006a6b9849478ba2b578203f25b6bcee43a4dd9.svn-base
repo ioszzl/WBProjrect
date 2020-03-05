@@ -1,0 +1,87 @@
+//
+//  PositionInitModel.h
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/12/1.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "BaseModel.h"
+
+NS_ASSUME_NONNULL_BEGIN
+@interface PositionInitImageList :NSObject
+@property (nonatomic , assign) NSInteger              imageId;
+@property (nonatomic , copy) NSString              * imageUrl;
+
+@end
+
+@interface PositionInitPost :NSObject
+@property (nonatomic , copy) NSString              * des_card_ids;//福利id
+@property (nonatomic , copy) NSString              * pay_plan;//发薪安排
+@property (nonatomic , assign) NSInteger              work_year;//工作经验(0,应届生 1.1-2年 2.3年以上 3.5年以上)
+@property (nonatomic , assign) NSInteger              ID;//岗位id
+@property (nonatomic , copy) NSString              * company_address;//公司地址
+@property (nonatomic , copy) NSString              * is_collect;//(y:没收藏,n已收藏)
+@property (nonatomic , copy) NSArray<PositionInitImageList *>              * imageList;
+@property (nonatomic , copy) NSString              * industry_class;//行业类别
+@property (nonatomic , copy) NSString              * work_time;
+@property (nonatomic , assign) NSInteger              company_id;//公司id
+@property (nonatomic , copy) NSString              * bed_situation;//住宿情况
+@property (nonatomic , assign) NSInteger              industry_class_id;//行业类别id
+@property (nonatomic , copy) NSString              * social_good;//社保福利
+@property (nonatomic , assign) NSInteger              com_user_id;//公司id
+@property (nonatomic , copy) NSString              * is_deleted;
+@property (nonatomic , copy) NSString              * fl;//福利
+@property (nonatomic , copy) NSString              * job_duty;//岗位职责
+@property (nonatomic , copy) NSString              * other_good;//其他福利
+@property (nonatomic , copy) NSString              * job_name;
+@property (nonatomic , assign) NSInteger              create_time;
+@property (nonatomic , copy) NSString              * total_pay;//综合工资
+@property (nonatomic , copy) NSString              * basic_good;
+@property (nonatomic , copy) NSString              * work_requirement;//工作要求(已改成富文本)
+@property (nonatomic , assign) NSInteger              min_value;
+@property (nonatomic , copy) NSString              * detailed_treatment;
+@property (nonatomic , assign) NSInteger              education_level;//学历 (0,不限 1.大专 2.本科 3.研究生 4.博士)
+@property (nonatomic , assign) NSInteger              post_money_open;//是否开启岗位押金(0:关闭,1:开启)
+@property (nonatomic , copy) NSString              * basic_pay;//基本工资
+@property (nonatomic , copy) NSString              * status;//发布状态(0.招聘中 1.未发布 2.已暂停)
+@property (nonatomic , copy) NSString              * last_time;
+@property (nonatomic , assign) NSInteger              max_value;
+@property (nonatomic , copy) NSString              * show_range;//薪资显示范围
+@property (nonatomic , assign) NSInteger              post_money;
+@property (nonatomic , copy) NSString              * company_environmental_pic_ids;
+@property (nonatomic , copy) NSString              * work_address_region;//就职区域
+@property (nonatomic , assign) NSInteger              salary_range_id;//薪资id
+@property (nonatomic , assign) NSInteger              work_address_region_id;//就职区域id
+@property (nonatomic , copy) NSString              * work_style;//工作方式
+@property (nonatomic , copy) NSString              * company_name;//公司名
+@property (nonatomic , assign) NSInteger              push_time;//发布时间戳
+@property (nonatomic , copy) NSString              * food_situation;//餐补情况
+@property (nonatomic , copy) NSString              * is_apply;//y"已申请",n:未申请
+@property (nonatomic , copy) NSString              * department;//部门
+
+@end
+
+@interface PositionInitTCjDesCards :NSObject
+@property (nonatomic , assign) NSInteger              userId;
+@property (nonatomic , copy) NSString              * isDeleted;
+@property (nonatomic , assign) NSInteger              ID;
+@property (nonatomic , copy) NSString              * useCount;
+@property (nonatomic , assign) NSInteger              type;
+@property (nonatomic , assign) NSInteger              createTime;
+@property (nonatomic , copy) NSString              * describ;
+
+@end
+
+@interface PositionInitData :NSObject
+@property (nonatomic , strong) PositionInitPost              * post;
+@property (nonatomic , copy) NSString              * fl;//该职位选择的福利id
+@property (nonatomic , copy) NSString              * companyName;//公司名称
+@property (nonatomic , copy) NSArray<PositionInitTCjDesCards *>              * tCjDesCards;
+
+@end
+@interface PositionInitModel : BaseModel
+@property (nonatomic , strong) PositionInitData              * data;
+@end
+
+NS_ASSUME_NONNULL_END

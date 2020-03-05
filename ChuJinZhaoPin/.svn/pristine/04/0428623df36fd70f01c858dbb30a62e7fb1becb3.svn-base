@@ -1,0 +1,70 @@
+//
+//  AddResumeTableViewCell.m
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/9.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "AddResumeTableViewCell.h"
+@implementation AddResumeTableViewCell
+-(instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier{
+    self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
+    if (self) {
+        self.selectionStyle = UITableViewCellSelectionStyleNone;
+        [self initUI];
+    }
+    return self;
+}
+-(void)initUI{
+    self.backgroundColor = COLOR_BG;
+    
+    UIView *bgV = [UIView new];
+    self.bgV = bgV;
+    bgV.backgroundColor = RGBCOLOR(255, 255, 255);
+    [self.contentView addSubview:bgV];
+    [bgV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.mas_offset(0);
+        make.left.mas_offset(Size(15));
+        make.right.mas_offset(-Size(15));
+        make.bottom.mas_offset(0);
+    }];
+    
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        UIBezierPath *maskPath = [UIBezierPath bezierPathWithRoundedRect:_bgV.bounds byRoundingCorners:(UIRectCornerBottomLeft | UIRectCornerBottomRight) cornerRadii:CGSizeMake(Size(5),Size(5))];//圆角大小
+        CAShapeLayer *maskLayer = [[CAShapeLayer alloc] init];
+        maskLayer.frame = _bgV.bounds;
+        maskLayer.path = maskPath.CGPath;
+        _bgV.layer.mask = maskLayer;
+    });
+    
+    _addBtn = [UIButton ym_ButtonWithFrame:CGRectZero title:@"" backgroundColor:RGBCOLOR(255, 255, 255) titleColor:COLOR_RGB_153 titleSize:Size(12)];
+    [bgV addSubview:_addBtn];
+    [_addBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.left.right.bottom.mas_offset(0);
+        make.height.mas_equalTo(Size(232/2));
+    }];
+    [_addBtn addTarget:self action:@selector(doAddbtn:) forControlEvents:UIControlEventTouchUpInside];
+    
+}
+
+
+-(void)doAddbtn:(UIButton *)btn{
+    BLOCK_EXEC(self.addBtnBlock,btn);
+}
+
+
+
+
+- (void)awakeFromNib {
+    [super awakeFromNib];
+    // Initialization code
+}
+
+- (void)setSelected:(BOOL)selected animated:(BOOL)animated {
+    [super setSelected:selected animated:animated];
+
+    // Configure the view for the selected state
+}
+
+@end

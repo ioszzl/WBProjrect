@@ -1,0 +1,30 @@
+//
+//  JobListTableViewCell.h
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/12.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+#import "PositionListModel.h"
+NS_ASSUME_NONNULL_BEGIN
+
+@interface JobListTableViewCell : UITableViewCell
+@property (nonatomic, strong) UILabel *jobNameLab;
+@property (nonatomic, strong) UILabel *moneyLab;
+@property (nonatomic, strong) UILabel *dateLab;
+@property (nonatomic, strong) UIImageView *logoImgV;
+@property (nonatomic, strong) UILabel *companyLab;
+@property (nonatomic, strong) UILabel *scoreLab;
+@property (nonatomic, strong) UILabel *countLab;
+
+@property (nonatomic, strong) NSString *score;
+
+@property (nonatomic, strong) PositionList *list;
+
+@property (nonatomic, strong) NSMutableArray<UIImageView *> *starImgVArr;
+@property (nonatomic, strong) NSMutableArray<UILabel *> *tagLabArr;
+@end
+
+NS_ASSUME_NONNULL_END

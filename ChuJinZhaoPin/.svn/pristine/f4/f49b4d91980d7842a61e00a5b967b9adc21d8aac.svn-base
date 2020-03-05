@@ -1,0 +1,27 @@
+//
+//  ChatJobHeadView.h
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/6.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+#import "ChatTopModel.h"
+NS_ASSUME_NONNULL_BEGIN
+
+@interface ChatJobHeadView : UIView
+@property (nonatomic, strong) UILabel *jobNameLab;
+@property (nonatomic, strong) UILabel *moneyLab;
+@property (nonatomic, strong) UIImageView *logoImgV;
+@property (nonatomic, strong) UILabel *companyLab;
+@property (nonatomic, strong) UILabel *scoreLab;
+
+@property (nonatomic, strong) NSMutableArray<UILabel *> *tagLabArr;
+
+@property (nonatomic, strong) NSMutableArray<UIImageView *> *starImgVArr;
+
+@property (nonatomic, strong) ChatTopPostMap *post;
+@end
+
+NS_ASSUME_NONNULL_END

@@ -1,0 +1,90 @@
+//
+//  ResumeEducationTableViewCell.m
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/9.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "ResumeEducationTableViewCell.h"
+
+@implementation ResumeEducationTableViewCell
+-(instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier{
+    self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
+    if (self) {
+        self.selectionStyle = UITableViewCellSelectionStyleNone;
+        [self initUI];
+    }
+    return self;
+}
+-(void)initUI{
+    self.backgroundColor = COLOR_BG;
+    
+    UIView *bgV = [[UIView alloc]initWithFrame:CGRectZero];
+    self.bgV = bgV;
+    bgV.backgroundColor = RGBCOLOR(255, 255, 255);
+    [self.contentView addSubview:bgV];
+    [bgV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_offset(Size(15));
+        make.top.mas_offset(0);
+        make.bottom.mas_offset(0);
+        make.right.mas_offset(-Size(15));
+    }];
+    
+    _editBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+    [_editBtn setImage:[UIImage imageNamed:@"编辑"] forState:UIControlStateNormal];
+    [bgV addSubview:_editBtn];
+    [_editBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.mas_offset(-Size(15));
+        make.top.mas_offset(Size(10));
+        make.height.width.mas_equalTo(Size(36/2));
+    }];
+    [_editBtn addTarget:self action:@selector(doEditBtn) forControlEvents:UIControlEventTouchUpInside];
+    
+    _dateLab = [UILabel ym_labelWithFrame:CGRectZero font:[UIFont systemFontOfSize:Size(14)] textColor:COLOR_RGB_153];
+    [bgV addSubview:_dateLab];
+    [_dateLab mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.mas_offset(Size(60/2));
+        make.left.mas_offset(Size(10));
+        
+    }];
+    
+    _contentLab = [UILabel ym_labelWithFrame:CGRectZero font:[UIFont systemFontOfSize:Size(14)] textColor:COLOR_RGB_51];
+    [bgV addSubview:_contentLab];
+    [_contentLab mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(_dateLab.mas_right).mas_offset(Size(15));
+        make.top.equalTo(_dateLab);
+        make.right.mas_offset(-Size(10));
+        make.bottom.equalTo(bgV.mas_bottom).mas_offset(-Size(48/2));
+    }];
+}
+
+-(void)doEditBtn{
+    BLOCK_EXEC(self.editBtnBlock);
+}
+
+-(void)layoutSubviews{
+    [super layoutSubviews];
+    
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        UIBezierPath *maskPath = [UIBezierPath bezierPathWithRoundedRect:_bgV.bounds byRoundingCorners:(UIRectCornerBottomLeft | UIRectCornerBottomRight) cornerRadii:CGSizeMake(Size(5),Size(5))];//圆角大小
+        CAShapeLayer *maskLayer = [[CAShapeLayer alloc] init];
+        maskLayer.frame = _bgV.bounds;
+        maskLayer.path = maskPath.CGPath;
+        _bgV.layer.mask = maskLayer;
+    });
+    
+    
+}
+- (void)awakeFromNib {
+    [super awakeFromNib];
+    // Initialization code
+}
+
+- (void)setSelected:(BOOL)selected animated:(BOOL)animated {
+    [super setSelected:selected animated:animated];
+
+    // Configure the view for the selected state
+}
+
+@end

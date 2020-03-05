@@ -1,0 +1,20 @@
+//
+//  ChatHistoryListViewController.h
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/6.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "BaseViewController.h"
+
+NS_ASSUME_NONNULL_BEGIN
+
+/**
+ 聊天历史记录
+ */
+@interface ChatHistoryListViewController : BaseViewController
+
+@end
+
+NS_ASSUME_NONNULL_END

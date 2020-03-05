@@ -1,0 +1,22 @@
+//
+//  PositionPayTableViewCell.h
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/14.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+
+NS_ASSUME_NONNULL_BEGIN
+
+/**
+ 薪资cell
+ */
+@interface PositionPayTableViewCell : UITableViewCell
+@property (nonatomic, strong) UILabel *totalMoneyLab;
+@property (nonatomic, strong) UILabel *baseMoneyLab;
+@property (nonatomic, strong) UILabel *payDateLab;
+@end
+
+NS_ASSUME_NONNULL_END

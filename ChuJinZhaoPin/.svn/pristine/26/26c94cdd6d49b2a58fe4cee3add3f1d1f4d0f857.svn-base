@@ -1,0 +1,21 @@
+//
+//  CompanyHomeIndexListModel.m
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/28.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "CompanyHomeIndexListModel.h"
+
+@implementation CompanyHomeIndexListModel
+
+@end
+@implementation CompanyHomeIndexList
+
+@end
+@implementation CompanyHomeIndexListData
++(NSDictionary *)mj_objectClassInArray{
+    return @{@"list":[CompanyHomeIndexList class]};
+}
+@end

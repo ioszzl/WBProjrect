@@ -1,0 +1,70 @@
+//
+//  DBHelper.h
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/12/7.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+#import "ECMessage.h"
+#import "ChatListModel.h"
+NS_ASSUME_NONNULL_BEGIN
+
+@interface DBHelper : NSObject
++ (instancetype)sharedDataBase;
+
+
+/**
+ 添加聊天列表
+ 
+ @param msg (ChatListModel *)msg
+ @return BOOL
+ */
+-(BOOL)addChatListRecord:(ChatListModel *)msg;
+
+/**
+ 删除聊天列表
+ 
+ @param msgId 列表id
+ @return BOOL
+ */
+-(BOOL)deleteChatListRecord:(NSString *)msgId;
+
+/**
+ 查询聊天列表
+ 
+ @param selfId 自己Id
+ @return (NSArray<ChatListModel *> *)
+ */
+- (NSArray<ChatListModel *> *)getAllChatListRecord:(NSString *)selfId;
+
+
+/**
+ 查询msgId
+ 
+ @param selfId 自己id
+ @param otherId 对方id
+ @return msgid
+ */
+-(NSString *)selectMsgIdWithSelfId:(NSString *)selfId otherId:(NSString *)otherId;
+
+/**
+ 添加聊天记录
+ 
+ @param msg (ECMessage *)msg
+ @return BOOL
+ */
+-(BOOL)addChatRecord:(ECMessage *)msg;
+
+/**
+ 查询聊天记录
+ 
+ @param msgId 聊天列表id
+ @return NSArray<ECMessage *>
+ */
+-(NSArray<ECMessage *> *)queryAllChatRecoderWithMsgId:(NSString *)msgId;
+
+@end
+
+NS_ASSUME_NONNULL_END

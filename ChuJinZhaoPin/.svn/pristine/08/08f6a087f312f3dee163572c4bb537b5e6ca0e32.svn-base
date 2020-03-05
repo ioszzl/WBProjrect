@@ -1,0 +1,20 @@
+//
+//  CompanyEnvironmentViewController.h
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/12.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "BaseViewController.h"
+#import "CompanyDetailInfoModel.h"
+NS_ASSUME_NONNULL_BEGIN
+
+/**
+ 公司环境
+ */
+@interface CompanyEnvironmentViewController : BaseViewController
+@property (nonatomic, strong) CompanyDetailInfoModel *model;
+@end
+
+NS_ASSUME_NONNULL_END

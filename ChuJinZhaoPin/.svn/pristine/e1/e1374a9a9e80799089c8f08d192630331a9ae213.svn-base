@@ -1,0 +1,22 @@
+//
+//  SkillCertificateHeaderView.h
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/10.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+
+NS_ASSUME_NONNULL_BEGIN
+
+@interface SkillCertificateHeaderView : UIView <UITextFieldDelegate>
+@property (nonatomic, strong) UILabel *titleLab;
+@property (nonatomic, strong) UITextField *textF;
+@property (nonatomic, strong) UIButton *addBtn;
+
+@property (nonatomic, copy) void(^addBtnBlock)(NSString *text);
+
+@end
+
+NS_ASSUME_NONNULL_END

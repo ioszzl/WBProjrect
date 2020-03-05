@@ -1,0 +1,215 @@
+//
+//  CompanyCommentDetailViewController.m
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/6.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "CompanyCommentDetailViewController.h"
+#import "CompanyDetailView.h"
+#import "JobCommentTableViewCell.h"
+@interface CompanyCommentDetailViewController ()<UITableViewDelegate,UITableViewDataSource>{
+    NSInteger _pageNum;
+}
+@property (nonatomic, strong) UITableView *tableV;
+@property (nonatomic, strong) CompanyDetailView *companyV;
+
+@property (nonatomic, strong) NSArray<CommentDetailList *> *dataSource;
+@end
+
+@implementation CompanyCommentDetailViewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    [self initUI];
+    
+    _pageNum = 1;
+    [self requestCommentData];
+}
+-(void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    
+    self.navigationController.navigationBar.translucent = YES;
+    [self.navigationController.navigationBar setBackgroundImage:[UIImage new] forBarMetrics:UIBarMetricsDefault];
+    [self.navigationController.navigationBar setShadowImage:[UIImage new]];
+    
+    [self scrollViewDidScroll:self.tableV];
+}
+-(void)viewWillDisappear:(BOOL)animated {
+    [super viewWillDisappear:animated];
+    
+    self.navigationController.navigationBar.translucent = NO;
+    [self.navigationController.navigationBar setBackgroundImage:nil forBarMetrics:UIBarMetricsDefault];
+    [self.navigationController.navigationBar setShadowImage:nil];
+    
+}
+-(void)initUI{
+    
+    
+    _tableV = [[UITableView alloc]initWithFrame:CGRectZero style:UITableViewStyleGrouped];
+    _tableV.tableFooterView = [UIView new];
+    _tableV.separatorStyle = UITableViewCellSeparatorStyleNone;
+    _tableV.showsVerticalScrollIndicator = NO;
+    _tableV.showsHorizontalScrollIndicator = NO;
+    _tableV.backgroundColor = COLOR_BG;
+    _tableV.dataSource = self;
+    _tableV.delegate = self;
+    _tableV.rowHeight = UITableViewAutomaticDimension;
+    if (@available(iOS 11.0, *)) {
+        _tableV.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
+    } else {
+        // Fallback on earlier versions
+    }
+    [self.view addSubview:_tableV];
+    [_tableV mas_updateConstraints:^(MASConstraintMaker *make) {
+        make.edges.equalTo(self.view);
+    }];
+    _tableV.mj_header = [YMRefreshHeader ym_headerWithRefreshingsBlock:^{
+        _pageNum = 1;
+        [self requestCommentData];
+    } animated:NO];
+    _tableV.mj_footer = [YMRefreshFooter ym_footerWithRefreshingsBlock:^{
+        _pageNum++;
+        [self requestCommentData];
+    } animated:NO];
+    
+    UIView *view = [[UIView alloc]initWithFrame:CGRectMake(0, 0, kScreenWidth, Size(660/2))];
+    view.backgroundColor = RGBCOLOR(255, 255, 255);
+    _tableV.tableHeaderView = view;
+    
+    CompanyDetailView *companyV = [[CompanyDetailView alloc]initWithFrame:CGRectZero];
+    [view addSubview:companyV];
+    [companyV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.top.right.mas_offset(0);
+        make.height.mas_equalTo(Size(630/2));
+    }];
+    self.companyV = companyV;
+    
+    
+    [self updateUI];
+}
+-(void)updateUI{
+    [self.companyV.logoImgV sd_setImageWithURL:[NSURL URLWithString:self.companyDetailM.data.companyMap.logoUrl] placeholderImage:[UIImage imageNamed:@"前台默认站位图"]];
+    self.companyV.focusCountLab.text = [NSString stringWithFormat:@"%ld位已关注",self.companyDetailM.data.NumMap.collectNum];//@"128个求职者已关注";
+    self.companyV.nameLab.text = self.companyDetailM.data.companyMap.company_name;//@"好未来";
+    self.companyV.scoreLab.text = [NSString stringWithFormat:@"%@分",JUDGE_NUll_DEF(self.companyDetailM.data.scoreMap.totalStar, @"0.0")];//@"4.4分";
+    self.companyV.messageScoreLab.text = JUDGE_NUll_DEF(self.companyDetailM.data.scoreMap.realStar, @"0.0") ;///@"5.0";
+    self.companyV.environmentScoreLab.text = JUDGE_NUll_DEF(self.companyDetailM.data.scoreMap.enviStar,@"0.0");//@"4.9";
+    self.companyV.interviewerScoreLab.text = JUDGE_NUll_DEF(self.companyDetailM.data.scoreMap.interStar,@"0.0");//@"4.8";
+    
+    self.companyV.score = self.companyDetailM.data.scoreMap.totalStar;
+    self.companyV.markArr = self.companyDetailM.data.describeList;
+}
+#pragma mark - request
+-(void)requestCommentData{
+    NSMutableDictionary *pageDic = [NSMutableDictionary dictionary];
+    [pageDic setValue:NSStringFromInteger(_pageNum) forKey:@"currPage"];
+    [pageDic setValue:@"10" forKey:@"pageSize"];
+    
+    NSMutableDictionary *dataDic = [NSMutableDictionary dictionary];
+    [dataDic setValue:self.companyId forKey:@"companyId"];
+    
+    NSMutableDictionary *paramDic = [NSMutableDictionary dictionary];
+    [paramDic setValue:[dataDic mj_JSONString] forKey:@"data"];
+    [paramDic setValue:AppDelegateInstance.token forKey:@"token"];
+    [paramDic setValue:[pageDic mj_JSONString] forKey:@"page"];
+    
+    [[RHNetAPIManager sharedManager]appUserFindCommentListOPT:paramDic].start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+        if (data) {
+           CommentDetailModel *model = [CommentDetailModel mj_objectWithKeyValues:data];
+            if (_pageNum == 1) {
+                self.dataSource = model.data.comment.list;
+                [self.tableV.mj_header endRefreshing];
+                [self.tableV.mj_footer resetNoMoreData];
+            }else{
+                NSMutableArray *temp = [NSMutableArray arrayWithArray:self.dataSource];
+                [temp addObjectsFromArray:model.data.comment.list];
+                self.dataSource = [temp copy];
+            }
+            if (model.data.comment.isLastPage) {
+                [self.tableV.mj_footer endRefreshingWithNoMoreData];
+            }else{
+                [self.tableV.mj_footer endRefreshing];
+            }
+            
+            [self.tableV reloadData];
+            
+        }else{
+            [self.tableV.mj_header endRefreshing];
+            [self.tableV.mj_footer endRefreshing];
+        }
+    });
+}
+#pragma mark - tableview delegate
+-(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section{
+    return self.dataSource.count;
+}
+-(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
+    CELL_DEFINE(JobCommentTableViewCell);
+    cell.commentType = commentDetailTypeComment;
+    CommentDetailList *list = self.dataSource[indexPath.row];
+    cell.list = list;
+    cell.likeBtnBlock = ^(UIButton * _Nonnull btn) {
+        NSMutableDictionary *dataDic = [NSMutableDictionary dictionary];
+        [dataDic setValue:NSStringFromInteger(list.ID) forKey:@"commentId"];
+        if ([list.isGood isEqualToString:@"n"]) {//是否点赞(y否,n是)
+            //type = 1 点赞  type = 0 取消点赞
+            [dataDic setValue:@"0" forKey:@"type"];
+        }else{
+            [dataDic setValue:@"1" forKey:@"type"];
+        }
+        
+        NSMutableDictionary *paramDic = [NSMutableDictionary dictionary];
+        [paramDic setValue:[dataDic mj_JSONString] forKey:@"data"];
+        [paramDic setValue:AppDelegateInstance.token forKey:@"token"];
+        
+        [[RHNetAPIManager sharedManager]appUserGoodCountOPT:paramDic].hiddenLoading().start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+            if (data) {
+                _pageNum = 1;
+                [self requestCommentData];
+            }
+        });
+    };
+    return cell;
+}
+//-(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath{
+//    JobCommentTableViewCell *cell = (JobCommentTableViewCell *)[self tableView:tableView cellForRowAtIndexPath:indexPath];
+//    CGFloat h = CGRectGetMaxY(cell.commentLab.frame) + cell.commentLab.height;
+//    return h+Size(15) ;
+//}
+#pragma mark - scroll delegate
+-(void)scrollViewDidScroll:(UIScrollView *)scrollView{
+    
+    //计算滚动的便宜量
+    CGFloat offSetY = scrollView.contentOffset.y;
+    
+    // 处理导航条
+    // 计算当前的透明度
+    CGFloat alpha = offSetY / Size(250/2);
+    self.navigationController.navigationBar.barTintColor = RGBACOLOR(255, 187, 21, alpha);
+    
+    //NSLog(@"%f",offSetY);
+    if (offSetY > Size(250/2)) {
+        [self.navigationController.navigationBar setBackgroundImage:nil forBarMetrics:UIBarMetricsDefault];
+    }else{
+        //[self.navigationController.navigationBar setBackgroundImage:[UIImage new] forBarMetrics:UIBarMetricsDefault];
+        [self.navigationController.navigationBar setBackgroundImage:[UIImage ym_imageWithColor:RGBACOLOR(255, 187, 21, alpha) size:CGSizeMake(kScreenWidth, kNavBarHeight)] forBarMetrics:UIBarMetricsDefault];
+    }
+    
+    
+}
+
+/*
+#pragma mark - Navigation
+
+// In a storyboard-based application, you will often want to do a little preparation before navigation
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
+    // Get the new view controller using [segue destinationViewController].
+    // Pass the selected object to the new view controller.
+}
+*/
+
+@end

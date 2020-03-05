@@ -1,0 +1,21 @@
+//
+//  CompanyHomeBannerModel.m
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/28.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "CompanyHomeBannerModel.h"
+
+@implementation CompanyHomeBannerModel
+
+@end
+@implementation CompanyHomeBannerList
+
+@end
+@implementation CompanyHomeBannerData
++(NSDictionary *)mj_objectClassInArray{
+    return @{@"bannerList":[CompanyHomeBannerList class]};
+}
+@end

@@ -1,0 +1,319 @@
+//
+//  CompanyHomeCell.m
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/8.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "CompanyHomeCell.h"
+
+@implementation CompanyHomeCell
+
+- (void)awakeFromNib {
+    [super awakeFromNib];
+    // Initialization code
+}
+
+- (void)setSelected:(BOOL)selected animated:(BOOL)animated {
+    [super setSelected:selected animated:animated];
+
+    // Configure the view for the selected state
+}
+
+-(instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier{
+    self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
+    if (self) {
+        self.selectionStyle = UITableViewCellSelectionStyleNone;
+        [self initUI];
+    }
+    return self;
+}
+-(void)initUI{
+    self.backgroundColor = COLOR_BG;
+    
+    UIView *bgV = [UIView new];
+    bgV.backgroundColor = RGBCOLOR(255, 255, 255);
+    [self.contentView addSubview:bgV];
+    [bgV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.top.right.mas_offset(0);
+        make.height.mas_equalTo(Size(262/2));
+    }];
+    
+    _headerImage = [UIImageView new];
+    _headerImage.layer.cornerRadius = Size(18);
+    _headerImage.clipsToBounds = YES;
+    [bgV addSubview:_headerImage];
+    [_headerImage mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_offset(Size(16));
+        make.width.mas_equalTo(Size(36));
+        make.height.mas_equalTo(Size(36));
+        make.top.mas_offset(Size(16));
+    }];
+    
+    
+    _nameLab = [UILabel ym_labelWithFrame:CGRectZero font:[UIFont systemFontOfSize:Size(15)] textColor:COLOR_RGB_51];
+    [bgV addSubview:_nameLab];
+    [_nameLab mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_equalTo(_headerImage.mas_right).mas_offset(Size(10));
+        make.top.mas_offset(Size(16));
+        make.height.mas_equalTo(Size(18));
+    }];
+    
+    
+    _genderImage = [UIImageView new];
+    [bgV addSubview:_genderImage];
+    [_genderImage mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_equalTo(_nameLab.mas_right).mas_offset(Size(5));
+        make.width.mas_equalTo(Size(13));
+        make.height.mas_equalTo(Size(13));
+        make.centerY.mas_equalTo(_nameLab.mas_centerY);
+    }];
+    
+
+    
+    NSArray *arr = @[@"",@"",@""];
+    UILabel *tempLab;
+    for (int i=0; i<arr.count; i++) {
+        UILabel *lab = [UILabel ym_labelWithFrame:CGRectZero font:[UIFont systemFontOfSize:Size(10)] textColor:COLOR_RGB_153];
+        lab.backgroundColor = RGBCOLOR(249, 250, 253);
+        lab.layer.cornerRadius = Size(5);
+        lab.textAlignment = NSTextAlignmentCenter;
+        lab.text = arr[i];
+        [bgV addSubview:lab];
+        //CGFloat w = [arr[i] ym_getStringWidthfont:[UIFont systemFontOfSize:Size(10)]];
+        [lab mas_makeConstraints:^(MASConstraintMaker *make) {
+            if (!tempLab) {
+                make.left.equalTo(_headerImage.mas_right).mas_offset(Size(10));
+                make.bottom.mas_equalTo(_headerImage.mas_bottom);
+                
+            }else{
+                make.left.equalTo(tempLab.mas_right).mas_offset(Size(7));
+                make.top.equalTo(tempLab);
+            }
+            make.height.mas_equalTo(Size(18));
+            //make.width.mas_equalTo(w+Size(10));
+        }];
+        
+        tempLab = lab;
+        [self.tagLabArr addObject:lab];
+    }
+    
+    _positionLab = [UILabel ym_labelWithFrame:CGRectZero font:[UIFont systemFontOfSize:Size(14)] textColor:COLOR_RGB_51];
+    [bgV addSubview:_positionLab];
+    [_positionLab mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.mas_offset(-Size(15));
+        make.top.mas_offset(Size(20));
+        make.height.mas_equalTo(Size(14));
+    }];
+    
+    
+    _timeLab = [UILabel ym_labelWithFrame:CGRectZero font:[UIFont systemFontOfSize:Size(12)] textColor:COLOR_RGB_153];
+    [bgV addSubview:_timeLab];
+    [_timeLab mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.mas_offset(-Size(15));
+        make.top.mas_equalTo(_positionLab.mas_bottom).mas_offset(Size(16));
+        make.height.mas_equalTo(Size(14));
+    }];
+    
+    
+    UILabel *label = [UILabel ym_labelWithFrame:CGRectZero font:[UIFont systemFontOfSize:Size(13)] textColor:COLOR_RGB_153];
+    [bgV addSubview:label];
+    [label mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_offset(Size(16));
+        make.top.mas_equalTo(_headerImage.mas_bottom).mas_offset(Size(16));
+        make.height.mas_equalTo(Size(13));
+    }];
+    label.text = @"期望薪资:";
+    
+    _salaryLab = [UILabel ym_labelWithFrame:CGRectZero font:[UIFont systemFontOfSize:Size(13)] textColor:RGBCOLOR(255,101,64)];
+    [bgV addSubview:_salaryLab];
+    [_salaryLab mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_equalTo(label.mas_right).mas_offset(Size(5));
+        make.top.mas_equalTo(_headerImage.mas_bottom).mas_offset(Size(16));
+        make.height.mas_equalTo(Size(13));
+    }];
+    
+    
+    _locationImage = [UIImageView new];
+    [bgV addSubview:_locationImage];
+    [_locationImage mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_equalTo(_salaryLab.mas_right).mas_offset(Size(27));
+        make.width.mas_equalTo(Size(10));
+        make.height.mas_equalTo(Size(12));
+        make.centerY.mas_equalTo(_salaryLab.mas_centerY);
+    }];
+    _locationImage.image = [UIImage imageNamed:@"location_gray"];
+    
+    _locationLab = [UILabel ym_labelWithFrame:CGRectZero font:[UIFont systemFontOfSize:Size(13)] textColor:COLOR_RGB_153];
+    [bgV addSubview:_locationLab];
+    [_locationLab mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_equalTo(_locationImage.mas_right).mas_offset(Size(5));
+        make.top.mas_equalTo(_headerImage.mas_bottom).mas_offset(Size(16));
+        make.height.mas_equalTo(Size(13));
+    }];
+    
+    
+    
+    _desLab = [UILabel ym_labelWithFrame:CGRectZero font:[UIFont systemFontOfSize:Size(13)] textColor:COLOR_RGB_102];
+    [bgV addSubview:_desLab];
+    [_desLab mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_offset(Size(16));
+        make.top.mas_equalTo(label.mas_bottom).mas_offset(Size(16));
+        make.height.mas_equalTo(Size(13));
+    }];
+    
+    
+    
+    _btnView = [UIView new];
+    _btnView.hidden = YES;
+    _btnView.backgroundColor = RGBCOLOR(255, 255, 255);
+    _btnView.layer.borderColor = COLOR_RGB_line.CGColor;
+    _btnView.layer.borderWidth = 0.4;
+    [self.contentView addSubview:_btnView];
+    [_btnView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.right.mas_offset(0);
+        make.top.equalTo(bgV.mas_bottom);
+        make.height.mas_equalTo(Size(98/2));
+    }];
+    
+    _twoBtn = [UIButton ym_ButtonWithFrame:CGRectZero title:@"" backgroundColor:nil titleColor:COLOR_RGB_102 titleSize:Size(14) cornerRadius:Size(4) borderWidth:0.5 borderColor:COLOR_RGB_line];
+    [_btnView addSubview:_twoBtn];
+    [_twoBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.mas_offset(-Size(15));
+        make.centerY.equalTo(_btnView);
+        make.width.mas_equalTo(Size(160/2));
+        make.height.mas_equalTo(Size(60/2));
+    }];
+    [_twoBtn addTarget:self action:@selector(doTwoBtn:) forControlEvents:UIControlEventTouchUpInside];
+    
+    _oneBtn = [UIButton ym_ButtonWithFrame:CGRectZero title:@"" backgroundColor:nil titleColor:COLOR_RGB_102 titleSize:Size(14) cornerRadius:Size(4) borderWidth:0.5 borderColor:COLOR_RGB_line];
+    [_btnView addSubview:_oneBtn];
+    [_oneBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.equalTo(_twoBtn.mas_left).mas_offset(-Size(15));
+        make.centerY.equalTo(_btnView);
+        make.width.mas_equalTo(Size(160/2));
+        make.height.mas_equalTo(Size(60/2));
+    }];
+    [_oneBtn addTarget:self action:@selector(doOneBtn:) forControlEvents:UIControlEventTouchUpInside];
+    
+    
+//    _headerImage.image = [UIImage imageNamed:@"mogu"];
+//    _nameLab.text = @"李潇潇";
+//    _genderImage.image = [UIImage imageNamed:@"gender_girl"];
+//    _positionLab.text = @"产品经理";
+//    _timeLab.text = @"今天发布";
+//    _salaryLab.text = @"9-12k";
+//    _locationLab.text = @"深圳";
+//    _desLab.text = @"熟悉ERP,法律领域, 有相关工作经验";
+}
+
+-(void)setList:(CompanyHomeIndexList *)list{
+    _list = list;
+    
+    [_headerImage sd_setImageWithURL:[NSURL URLWithString:list.imgUrl] placeholderImage:[UIImage imageNamed:@"头像"]];
+    //_headerImage.image = [UIImage imageNamed:@"mogu"];
+    _nameLab.text = list.real_name;//@"李潇潇";
+    if ([list.sex isEqualToString:@"1"]) {
+         _genderImage.image = [UIImage imageNamed:@"gender_girl"];
+    }else{
+         _genderImage.image = [UIImage imageNamed:@"gender_boy"];
+    }
+   
+    _positionLab.text = list.work_position;//@"产品经理";
+    _timeLab.text = [[list.date componentsSeparatedByString:@" "] objectAtIndex:0];//@"今天发布";
+    _salaryLab.text = list.want_salary;//@"9-12k";
+    _locationLab.text = list.position_name;//@"深圳";
+    _desLab.text = list.skill;//@"熟悉ERP,法律领域, 有相关工作经验";
+    
+    
+    
+    self.tagLabArr[0].text = [NSString stringWithFormat:@"%ld",list.age];
+    [self.tagLabArr[0] mas_updateConstraints:^(MASConstraintMaker *make) {
+        make.width.mas_equalTo([self.tagLabArr[0].text ym_getStringWidthfont:[UIFont systemFontOfSize:Size(10)]] + Size(10));
+    }];
+    if (list.max_edu_level.length != 0) {
+        self.tagLabArr[1].text = list.max_edu_level;
+        [self.tagLabArr[1] mas_updateConstraints:^(MASConstraintMaker *make) {
+            make.width.mas_equalTo([self.tagLabArr[1].text ym_getStringWidthfont:[UIFont systemFontOfSize:Size(10)]] + Size(10));
+        }];
+        self.tagLabArr[1].hidden = NO;
+    }else{
+        self.tagLabArr[1].hidden = YES;
+    }
+    
+    if ([list.fresh_graduates isEqualToString:@"1"]) {
+        self.tagLabArr[2].text = @"应届毕业生";
+    }else{
+        self.tagLabArr[2].text = @"非应届毕业生";
+    }
+    
+    [self.tagLabArr[2] mas_updateConstraints:^(MASConstraintMaker *make) {
+        make.width.mas_equalTo([self.tagLabArr[2].text ym_getStringWidthfont:[UIFont systemFontOfSize:Size(10)]] + Size(10)).priorityHigh();
+        make.right.mas_lessThanOrEqualTo(-Size(135/2));
+    }];
+}
+
+-(void)setResumeList:(ResumeList *)resumeList{
+    _resumeList = resumeList;
+    
+    [_headerImage sd_setImageWithURL:[NSURL URLWithString:resumeList.imgUrl] placeholderImage:[UIImage imageNamed:@"头像"]];
+    //_headerImage.image = [UIImage imageNamed:@"mogu"];
+    _nameLab.text = resumeList.real_name;//@"李潇潇";
+    if ([resumeList.sex isEqualToString:@"1"]) {
+        _genderImage.image = [UIImage imageNamed:@"gender_girl"];
+    }else{
+        _genderImage.image = [UIImage imageNamed:@"gender_boy"];
+    }
+    
+    _positionLab.text = resumeList.work_position;//@"产品经理";
+    _timeLab.text = [[NSDate dateWithTimeIntervalSince1970:resumeList.create_time/1000] stringWithFormat:@"yyyy-MM-dd"];//@"今天发布";
+    _salaryLab.text = resumeList.want_salary;//@"9-12k";
+    _locationLab.text = resumeList.position_name;//@"深圳";
+    _desLab.text = resumeList.skill;//@"熟悉ERP,法律领域, 有相关工作经验";
+    
+    
+    
+    self.tagLabArr[0].text = [NSString stringWithFormat:@"%ld",resumeList.age];
+    [self.tagLabArr[0] mas_updateConstraints:^(MASConstraintMaker *make) {
+        make.width.mas_equalTo([self.tagLabArr[0].text ym_getStringWidthfont:[UIFont systemFontOfSize:Size(10)]] + Size(10));
+    }];
+    if (resumeList.max_edu_level != 0) {
+        self.tagLabArr[1].text = [AppDelegateInstance educationNameWithID:resumeList.max_edu_level];
+        [self.tagLabArr[1] mas_updateConstraints:^(MASConstraintMaker *make) {
+            make.width.mas_equalTo([self.tagLabArr[1].text ym_getStringWidthfont:[UIFont systemFontOfSize:Size(10)]] + Size(10));
+        }];
+        self.tagLabArr[1].hidden = NO;
+    }else{
+        self.tagLabArr[1].hidden = YES;
+    }
+    
+    if ([resumeList.fresh_graduates isEqualToString:@"1"]) {
+        self.tagLabArr[2].text = @"应届毕业生";
+    }else{
+        self.tagLabArr[2].text = @"非应届毕业生";
+    }
+    
+    [self.tagLabArr[2] mas_updateConstraints:^(MASConstraintMaker *make) {
+        make.width.mas_equalTo([self.tagLabArr[2].text ym_getStringWidthfont:[UIFont systemFontOfSize:Size(10)]] + Size(10)).priorityHigh();
+        make.right.mas_lessThanOrEqualTo(-Size(135/2));
+    }];
+    
+    
+    
+}
+
+-(NSMutableArray<UILabel *> *)tagLabArr{
+    if (!_tagLabArr) {
+        _tagLabArr = [NSMutableArray array];
+    }
+    return _tagLabArr;
+}
+
+-(void)doTwoBtn:(UIButton *)btn{
+    BLOCK_EXEC(self.twoBtnBlock,btn);
+}
+-(void)doOneBtn:(UIButton *)btn{
+    BLOCK_EXEC(self.oneBtnBlock,btn);
+}
+@end

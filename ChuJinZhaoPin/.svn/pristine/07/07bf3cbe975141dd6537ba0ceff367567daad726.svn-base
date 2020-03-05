@@ -1,0 +1,323 @@
+//
+//  CompanyCenterVC.m
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/8.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "CompanyCenterVC.h"
+#import "FindIndexListTableViewCell.h"
+#import "ContactMangeViewController.h"
+#import "EditCompanyInfoViewController.h"
+#import "CompanyMessageViewController.h"
+#import "CompanyInfoDetailViewController.h"
+#import "CompanyDetailInfoModel.h"
+#import "MineHtmlViewController.h"
+#import "SettingViewController.h"
+@interface CompanyCenterVC ()<UITableViewDataSource,UITableViewDelegate>
+@property (nonatomic, strong) UITableView *tableV;
+
+@property (nonatomic, strong) UILabel *manageLab;
+@property (nonatomic, strong) UILabel *peopleLab;
+@property (nonatomic, strong) UILabel *tradeLab;
+
+@property (nonatomic, strong) UIImageView *headImgV;
+@property (nonatomic, strong) UILabel *nameLab;
+
+@property (nonatomic, strong) CompanyDetailInfoModel *model;
+@end
+
+@implementation CompanyCenterVC
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    [self initUI];
+    [self.view addSubview:self.tableV];
+    
+}
+-(void)viewWillAppear:(BOOL)animated{
+    [super viewWillAppear:animated];
+    self.navigationController.navigationBar.translucent = YES;
+    [self.navigationController.navigationBar setBackgroundImage:[UIImage new] forBarMetrics:UIBarMetricsDefault];
+    //去掉透明后导航栏下边的黑边
+    [self.navigationController.navigationBar setShadowImage:[UIImage new]];
+    
+    
+}
+-(void)viewWillDisappear:(BOOL)animated{
+    [super viewWillDisappear:animated];
+    self.navigationController.navigationBar.translucent = NO;
+    // 重置 变为不透明
+    [self.navigationController.navigationBar setBackgroundImage:nil forBarMetrics:UIBarMetricsDefault];
+    [self.navigationController.navigationBar setShadowImage:nil];
+    
+}
+- (void)viewDidAppear:(BOOL)animated{
+    [super viewDidAppear:animated];
+    
+    [self requestInfoData];
+}
+
+-(void)initUI{
+    UIButton *messageBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+    [messageBtn setImage:[UIImage imageNamed:@"Themessage01"] forState:UIControlStateNormal];
+    [messageBtn setImage:[UIImage imageNamed:@"Themessage02"] forState:UIControlStateSelected];
+    [messageBtn addTarget:self action:@selector(doMessageBtn:) forControlEvents:UIControlEventTouchUpInside];
+    UIBarButtonItem *item = [[UIBarButtonItem alloc]initWithCustomView:messageBtn];
+    self.navigationItem.rightBarButtonItem = item;
+
+//    [view addSubview:messageBtn];
+//    [messageBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+//        make.right.mas_offset(-Size(25));
+//        make.top.mas_offset(kStatusHeight + Size(15));
+//    }];
+//    [messageBtn addTarget:self action:@selector(doMessageBtn) forControlEvents:UIControlEventTouchUpInside];
+}
+-(void)updateUI{
+    [self.headImgV sd_setImageWithURL:[NSURL URLWithString:self.model.data.logoUrl] placeholderImage:[UIImage imageNamed:@"头像"]];
+    self.nameLab.text = self.model.data.company_name;
+    self.manageLab.text = self.model.data.company_type_str;
+    self.peopleLab.text = self.model.data.scale_str;
+    self.tradeLab.text = self.model.data.describ;
+}
+#pragma mark - request
+-(void)requestInfoData{
+    
+    NSMutableDictionary *paramDic = [NSMutableDictionary dictionary];
+    [paramDic setValue:AppDelegateInstance.token forKey:@"token"];
+    
+    [[RHNetAPIManager sharedManager]appToCompanyInfoDetailOPT:paramDic].hiddenLoading().start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+        if (data) {
+            self.model = [CompanyDetailInfoModel mj_objectWithKeyValues:data];
+            
+            
+            [self updateUI];
+        }
+    });
+}
+#pragma mark - action
+-(void)doEditBtn{
+    EditCompanyInfoViewController *vc = [EditCompanyInfoViewController new];
+    [self.navigationController pushViewController:vc animated:YES];
+}
+-(void)doMessageBtn:(UIButton *)btn{
+    //btn.selected = !btn.selected;
+    CompanyMessageViewController *vc = [CompanyMessageViewController new];
+    [self.navigationController pushViewController:vc animated:YES];
+}
+-(void)doCompanyDetail{
+    CompanyInfoDetailViewController *vc = [CompanyInfoDetailViewController new];
+    [self.navigationController pushViewController:vc animated:YES];
+}
+#pragma mark - tableview/ delegate
+-(UITableView *)tableV{
+    if (!_tableV) {
+        _tableV = [[UITableView alloc]initWithFrame:CGRectMake(0, 0, kScreenWidth, kScreenHeight-kTabBarHeight) style:UITableViewStylePlain];
+        if (@available(iOS 11.0, *)) {
+            _tableV.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
+        } else {
+            // Fallback on earlier versions
+        }
+        _tableV.tableFooterView = [UIView new];
+        //_tableV.separatorInset = UIEdgeInsetsMake(0, 0, 0, 0);
+        _tableV.showsVerticalScrollIndicator = NO;
+        _tableV.showsHorizontalScrollIndicator = NO;
+        _tableV.backgroundColor = COLOR_BG;
+        _tableV.dataSource = self;
+        _tableV.delegate = self;
+        
+        UIView *view = [[UIView alloc]initWithFrame:CGRectMake(0, 0, kScreenWidth, kStatusHeight+Size(362/2))];
+        view.backgroundColor = RGBCOLOR(255, 255, 255);
+        _tableV.tableHeaderView = view;
+        
+        UIImageView *bgImgV = [[UIImageView alloc]initWithFrame:CGRectMake(0, 0, kScreenWidth, Size(250/2)+kStatusHeight)];
+        bgImgV.image = [UIImage imageNamed:@"Theloginbackground1"];
+        [view addSubview:bgImgV];
+        
+        UIView *topV = [[UIView alloc]initWithFrame:CGRectMake(Size(50/2), view.height-Size(156/2+20), Size(668/2), Size(156/2))];
+        topV.backgroundColor = RGBCOLOR(255, 255, 255);
+        topV.layer.shadowColor = COLOR_RGB_51.CGColor;
+        topV.layer.shadowOpacity = 0.5f;
+        topV.layer.shadowOffset = CGSizeMake(1, 1);
+        topV.centerX = view.centerX;
+        topV.layer.cornerRadius = Size(5);
+        [view addSubview:topV];
+        
+        UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc]initWithTarget:self action:@selector(doCompanyDetail)];
+        [topV addGestureRecognizer:tap];
+        
+        UIImageView *headImgV = [[UIImageView alloc]initWithImage:[UIImage imageNamed:@"个人中心头像"]];
+        headImgV.layer.cornerRadius = Size(110/4);
+        headImgV.clipsToBounds = YES;
+        headImgV.frame = CGRectMake(Size(15), -Size(20), Size(110/2), Size(110/2));
+        [topV addSubview:headImgV];
+        self.headImgV = headImgV;
+        
+        UILabel *nameLab = [UILabel ym_labelWithFrame:CGRectMake(headImgV.right+Size(10), 0, Size(396/2), Size(64/2)) font:[UIFont systemFontOfSize:Size(17)] textColor:COLOR_RGB_51];
+        //nameLab.text = @"张三丰";
+        nameLab.adjustsFontSizeToFitWidth = YES;
+        [topV addSubview:nameLab];
+        self.nameLab = nameLab;
+        
+        UIButton *editBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        editBtn.frame = CGRectMake(topV.width-Size(38/2+30), 0, Size(30), Size(35));
+        [editBtn setImage:[UIImage imageNamed:@"编辑"] forState:UIControlStateNormal];
+        [topV addSubview:editBtn];
+        [editBtn addTarget:self action:@selector(doEditBtn) forControlEvents:UIControlEventTouchUpInside];
+        
+        UIImageView *manageImgV = [[UIImageView alloc]initWithImage:[UIImage imageNamed:@"私营"]];
+        [topV addSubview:manageImgV];
+        [manageImgV mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.left.mas_offset(Size(15));
+            make.top.equalTo(headImgV.mas_bottom).mas_offset(Size(10));
+            make.width.mas_equalTo(Size(28/2));
+            make.height.mas_equalTo(Size(28/2));
+        }];
+        
+        _manageLab = [UILabel ym_labelWithFrame:CGRectZero font:[UIFont systemFontOfSize:Size(14)] textColor:COLOR_RGB_51];
+        [topV addSubview:_manageLab];
+        [_manageLab mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.left.equalTo(manageImgV.mas_right).mas_offset(Size(11));
+            make.centerY.equalTo(manageImgV);
+        }];
+        //_manageLab.text = @"私营";
+        
+        UIImageView *peopleImgV = [[UIImageView alloc]initWithImage:[UIImage imageNamed:@"人"]];
+        [topV addSubview:peopleImgV];
+        [peopleImgV mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.left.equalTo(_manageLab.mas_right).mas_offset(Size(15));
+            make.centerY.equalTo(_manageLab);
+            make.width.mas_equalTo(Size(28/2));
+            make.height.mas_equalTo(Size(28/2));
+        }];
+        
+        _peopleLab = [UILabel ym_labelWithFrame:CGRectZero font:[UIFont systemFontOfSize:Size(14)] textColor:COLOR_RGB_51];
+        [topV addSubview:_peopleLab];
+        [_peopleLab mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.left.equalTo(peopleImgV.mas_right).mas_offset(Size(11));
+            make.centerY.equalTo(peopleImgV);
+        }];
+        //_peopleLab.text = @"2000人";
+        
+        UIImageView *tradeImgV = [[UIImageView alloc]initWithImage:[UIImage imageNamed:@"互联网"]];
+        [topV addSubview:tradeImgV];
+        [tradeImgV mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.left.equalTo(_peopleLab.mas_right).mas_offset(Size(15));
+            make.centerY.equalTo(_peopleLab);
+            make.width.mas_equalTo(Size(28/2));
+            make.height.mas_equalTo(Size(28/2));
+        }];
+        
+        _tradeLab = [UILabel ym_labelWithFrame:CGRectZero font:[UIFont systemFontOfSize:Size(14)] textColor:COLOR_RGB_51];
+        [topV addSubview:_tradeLab];
+        _tradeLab.numberOfLines = 1;
+        [_tradeLab mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.left.equalTo(tradeImgV.mas_right).mas_offset(Size(11));
+            make.centerY.equalTo(tradeImgV);
+            make.right.mas_lessThanOrEqualTo(-Size(10)).priorityHigh();
+        }];
+        //_tradeLab.text = @"移动互联网";
+        
+    }
+    return _tableV;
+}
+
+-(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section{
+    return 5;
+}
+-(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
+    CELL_DEFINE(FindIndexListTableViewCell);
+    [cell.iconImgV mas_updateConstraints:^(MASConstraintMaker *make) {
+        make.width.height.mas_equalTo(Size(45/2));
+        make.left.mas_offset(Size(10));
+    }];
+    switch (indexPath.row) {
+        case 0:
+            cell.iconImgV.image = [UIImage imageNamed:@"account1"];
+            cell.titleLab.text = @"我的钱包";
+            break;
+        case 1:
+            cell.iconImgV.image = [UIImage imageNamed:@"联系人管理"];
+            cell.titleLab.text = @"联系人管理";
+            break;
+        case 2:
+            cell.iconImgV.image = [UIImage imageNamed:@"Theorder1"];
+            cell.titleLab.text = @"我的收藏";
+            break;
+        case 3:
+            cell.iconImgV.image = [UIImage imageNamed:@"personal1"];
+            cell.titleLab.text = @"我的投诉";
+            break;
+        case 4:
+            cell.iconImgV.image = [UIImage imageNamed:@"Setupthe1"];
+            cell.titleLab.text = @"设置";
+            break;
+        default:
+            break;
+    }
+    
+    return cell;
+}
+-(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath{
+    return Size(120/2);
+}
+
+-(void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath{
+    switch (indexPath.row) {
+        case 0:
+        {//我的钱包
+            MineHtmlViewController *vc = [MineHtmlViewController new];
+            vc.htmlString = [NSString stringWithFormat:@"%@/app/toAppMyWallet.do?token=%@",BaseServerUrl,AppDelegateInstance.token];
+            [self.navigationController pushViewController:vc animated:YES];
+        }
+            break;
+        case 1:
+        {//联系人管理
+            ContactMangeViewController *vc = [ContactMangeViewController new];
+            [self.navigationController pushViewController:vc animated:YES];
+        }
+            break;
+        case 2:
+        {//我的收藏
+            MineHtmlViewController *vc = [MineHtmlViewController new];
+            vc.htmlString = [NSString stringWithFormat:@"%@/app/toAppMyCollection.do?token=%@",BaseServerUrl,AppDelegateInstance.token];
+            [self.navigationController pushViewController:vc animated:YES];
+        }
+            break;
+        case 3:
+        {//我的投诉
+            MineHtmlViewController *vc = [MineHtmlViewController new];
+            vc.htmlString = [NSString stringWithFormat:@"%@/app/toAppCompanyMyComplaintList.do?token=%@",BaseServerUrl,AppDelegateInstance.token];
+            [self.navigationController pushViewController:vc animated:YES];
+        }
+            break;
+        case 4:
+        {//设置
+            SettingViewController *vc = [SettingViewController new];
+            [self.navigationController pushViewController:vc animated:YES];
+            
+        }
+            break;
+        default:
+            break;
+    }
+    
+}
+- (void)didReceiveMemoryWarning {
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+
+/*
+#pragma mark - Navigation
+
+// In a storyboard-based application, you will often want to do a little preparation before navigation
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
+    // Get the new view controller using [segue destinationViewController].
+    // Pass the selected object to the new view controller.
+}
+*/
+
+@end

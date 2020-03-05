@@ -1,0 +1,277 @@
+//
+//  ResumeListVC.m
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/8.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "ResumeListVC.h"
+#import "ResumeListViewController.h"
+#import "JobListTableViewCell.h"
+#import "CompanyHomeCell.h"
+#import "ResumeDetailViewController.h"
+#import "ResumeListModel.h"
+#import "PositionListModel.h"
+@interface ResumeListVC ()<UITableViewDelegate,UITableViewDataSource>{
+    NSInteger _pageNum;
+}
+@property (nonatomic, strong) UIButton *jobBtn;
+@property (nonatomic, strong) UIButton *yearBtn;
+@property (nonatomic, strong) UITableView *tableV;
+@property (nonatomic, strong) NSArray<ResumeList *> *resumeDataSource;
+@property (nonatomic, strong) NSArray<PositionList *> *positionDataSource;
+@end
+
+@implementation ResumeListVC
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    [self initUI];
+    
+    
+}
+-(void)viewDidAppear:(BOOL)animated{
+    [super viewDidAppear:animated];
+    if (self.yearBtn.selected) {
+        [self doChangeBtn:self.yearBtn];
+    }else{
+        [self doChangeBtn:self.jobBtn];
+    }
+    
+}
+-(void)initUI{
+    UIView *navView = [[UIView alloc]initWithFrame:CGRectMake(0, kStatusHeight, kScreenWidth, 44)];
+    self.navigationItem.titleView = navView;
+    if (@available(iOS 11.0, *)) {
+        [navView mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.width.mas_equalTo(kScreenWidth);
+            make.height.mas_equalTo(44);
+        }];
+    }
+    UIView *bgV = [UIView new];
+    bgV.layer.cornerRadius = Size(5);
+    bgV.layer.borderColor = COLOR_RGB_line.CGColor;
+    bgV.layer.borderWidth = 0.5;
+    bgV.clipsToBounds = YES;
+    [navView addSubview:bgV];
+    [bgV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.center.equalTo(navView);
+        make.width.mas_equalTo(Size(346/2));
+        make.height.mas_equalTo(Size(56/2));
+    }];
+    
+    _jobBtn = [UIButton ym_ButtonWithFrame:CGRectZero title:@"职位" backgroundColor:nil titleColor:RGBCOLOR(255, 255, 255) titleSize:Size(14)];
+    [bgV addSubview:_jobBtn];
+    [_jobBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.top.bottom.mas_offset(0);
+        make.right.mas_equalTo(bgV.mas_centerX);
+    }];
+    [_jobBtn setBackgroundImage:[UIImage ym_imageWithColor:RGBCOLOR(255, 255, 255) size:CGSizeMake(Size(346/4), Size(56/2))] forState:UIControlStateSelected];
+    [_jobBtn setTitleColor:COLOR_RGB_51 forState:UIControlStateSelected];
+    [_jobBtn addTarget:self action:@selector(doChangeBtn:) forControlEvents:UIControlEventTouchUpInside];
+    _jobBtn.selected = YES;
+    
+    _yearBtn = [UIButton ym_ButtonWithFrame:CGRectZero title:@"近半年" backgroundColor:nil titleColor:RGBCOLOR(255, 255, 255) titleSize:Size(14)];
+    [bgV addSubview:_yearBtn];
+    [_yearBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.top.bottom.mas_offset(0);
+        make.left.mas_equalTo(bgV.mas_centerX);
+    }];
+    [_yearBtn setBackgroundImage:[UIImage ym_imageWithColor:RGBCOLOR(255, 255, 255) size:CGSizeMake(Size(346/4), Size(56/2))] forState:UIControlStateSelected];
+    [_yearBtn setTitleColor:COLOR_RGB_51 forState:UIControlStateSelected];
+    [_yearBtn addTarget:self action:@selector(doChangeBtn:) forControlEvents:UIControlEventTouchUpInside];
+    
+    _tableV = [[UITableView alloc]initWithFrame:CGRectZero style:UITableViewStyleGrouped];
+    _tableV.separatorStyle = UITableViewCellSeparatorStyleNone;
+    _tableV.showsVerticalScrollIndicator = NO;
+    _tableV.showsHorizontalScrollIndicator = NO;
+    _tableV.backgroundColor = COLOR_BG;
+    _tableV.dataSource = self;
+    _tableV.delegate = self;
+    [self.view addSubview:_tableV];
+    [_tableV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.left.right.bottom.mas_offset(0);
+    }];
+    _tableV.rowHeight = Size(262/2+Size(5));
+    _tableV.mj_header = [YMRefreshHeader ym_headerWithRefreshingsBlock:^{
+        _pageNum = 1;
+        if (self.jobBtn.selected) {
+            [self requestPositionListData];
+        }else{
+            [self requestResumeListData];
+        }
+        
+    } animated:NO];
+    _tableV.mj_footer = [YMRefreshFooter ym_footerWithRefreshingsBlock:^{
+        _pageNum++;
+        if (self.jobBtn.selected) {
+            [self requestPositionListData];
+        }else{
+            [self requestResumeListData];
+        }
+    } animated:NO];
+}
+
+#pragma mark - request
+-(void)requestPositionListData{
+    NSMutableDictionary *pageDic = [NSMutableDictionary dictionary];
+    [pageDic setValue:NSStringFromInteger(_pageNum) forKey:@"currPage"];
+    [pageDic setValue:@"10" forKey:@"pageSize"];
+    
+    NSMutableDictionary *dataDic = [NSMutableDictionary dictionary];
+    [dataDic setValue:@"0" forKey:@"status"];
+    
+    NSMutableDictionary *paramDic = [NSMutableDictionary dictionary];
+    [paramDic setValue:[dataDic mj_JSONString] forKey:@"data"];
+    [paramDic setValue:AppDelegateInstance.token forKey:@"token"];
+    [paramDic setValue:[pageDic mj_JSONString] forKey:@"page"];
+    
+    [[RHNetAPIManager sharedManager]appPostsListOPT:paramDic].start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+        if (data) {
+            PositionListModel *model = [PositionListModel mj_objectWithKeyValues:data];
+            if (_pageNum == 1) {
+                self.positionDataSource = model.data.pageInfo.list;
+                [self.tableV.mj_header endRefreshing];
+                [self.tableV.mj_footer resetNoMoreData];
+            }else{
+                NSMutableArray *temp = [NSMutableArray arrayWithArray:self.positionDataSource];
+                [temp addObjectsFromArray:model.data.pageInfo.list];
+                self.positionDataSource  = [temp copy];
+            }
+            if (model.data.pageInfo.isLastPage) {
+                [self.tableV.mj_footer endRefreshingWithNoMoreData];
+            }else{
+                [self.tableV.mj_footer endRefreshing];
+            }
+            
+            [self.tableV reloadData];
+            
+        }else{
+
+            [self.tableV.mj_header endRefreshing];
+            [self.tableV.mj_footer endRefreshing];
+        }
+    });
+}
+-(void)requestResumeListData{
+    
+    NSMutableDictionary *pageDic = [NSMutableDictionary dictionary];
+    [pageDic setValue:NSStringFromInteger(_pageNum) forKey:@"currPage"];
+    [pageDic setValue:@"10" forKey:@"pageSize"];
+    
+    NSMutableDictionary *dataDic = [NSMutableDictionary dictionary];
+    [dataDic setValue:@"1" forKey:@"sixM"];
+    
+    NSMutableDictionary *paramDic = [NSMutableDictionary dictionary];
+    [paramDic setValue:[dataDic mj_JSONString] forKey:@"data"];
+    [paramDic setValue:AppDelegateInstance.token forKey:@"token"];
+    [paramDic setValue:[pageDic mj_JSONString] forKey:@"page"];
+    
+    [[RHNetAPIManager sharedManager]appResumeCentralOPT:paramDic].start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+        if (data) {
+            ResumeListModel *model = [ResumeListModel mj_objectWithKeyValues:data];
+            if (model.data.list.count == 0) {
+                [HUD showHUDError:nil title:@"暂无数据"];
+            }
+            if (_pageNum == 1) {
+                self.resumeDataSource = model.data.list;
+                [self.tableV.mj_header endRefreshing];
+                [self.tableV.mj_footer resetNoMoreData];
+            }else{
+                NSMutableArray *temp = [NSMutableArray arrayWithArray:self.resumeDataSource];
+                [temp addObjectsFromArray:model.data.list];
+                self.resumeDataSource = [temp copy];
+            }
+            if (model.data.isLastPage) {
+                [self.tableV.mj_footer endRefreshingWithNoMoreData];
+            }else{
+                [self.tableV.mj_footer endRefreshing];
+            }
+            
+            [self.tableV reloadData];
+            
+        }else{
+            [self.tableV.mj_header endRefreshing];
+            [self.tableV.mj_footer endRefreshing];
+        }
+    });
+}
+#pragma mark - action
+-(void)doChangeBtn:(UIButton *)btn{
+    btn.selected = YES;
+    if ([btn isEqual:self.jobBtn]) {
+        self.yearBtn.selected = NO;
+        _pageNum = 1;
+        [self requestPositionListData];
+    }else{
+        self.jobBtn.selected = NO;
+        _pageNum = 1;
+        [self requestResumeListData];
+    }
+    [self.tableV reloadData];
+}
+
+#pragma mark - tableview delegate
+-(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section{
+    if (self.yearBtn.selected) {
+        return self.resumeDataSource.count;
+    }
+    return self.positionDataSource.count;
+}
+-(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
+    
+    if (self.yearBtn.selected) {//近半年
+        CELL_DEFINE(CompanyHomeCell);
+        cell.resumeList = self.resumeDataSource[indexPath.row];
+        return cell;
+
+    }else{//职位
+        CELL_DEFINE(JobListTableViewCell);
+        cell.list = self.positionDataSource[indexPath.row];
+        return cell;
+    }
+    
+}
+-(UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section{
+    return [UIView new];
+}
+-(UIView *)tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section{
+    return [UIView new];
+}
+-(CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section{
+    return CGFLOAT_MIN;
+}
+-(CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section{
+    return CGFLOAT_MIN;
+}
+-(void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath{
+    if (self.jobBtn.selected) {
+        ResumeListViewController *vc = [ResumeListViewController new];
+        [self.navigationController pushViewController:vc animated:YES];
+    }else{
+        ResumeDetailViewController *vc = [ResumeDetailViewController new];
+        vc.resumeId = NSStringFromInteger(self.resumeDataSource[indexPath.row].resume_id);
+        [self.navigationController pushViewController:vc animated:YES];
+    }
+    
+}
+
+- (void)didReceiveMemoryWarning {
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+
+/*
+#pragma mark - Navigation
+
+// In a storyboard-based application, you will often want to do a little preparation before navigation
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
+    // Get the new view controller using [segue destinationViewController].
+    // Pass the selected object to the new view controller.
+}
+*/
+
+@end

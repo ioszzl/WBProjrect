@@ -1,0 +1,743 @@
+//
+//  CompayHomeVC.m
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/8.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "CompayHomeVC.h"
+#import "TYPageControl.h"
+#import "TYCyclePagerView.h"
+#import "TYCyclePagerViewCell.h"
+#import "CompleteInformationAlertView.h"
+#import "SliderNewsTableViewCell.h"
+#import "CompanyHomeCell.h"
+#import "SearchViewController.h"
+#import "ResumeDetailViewController.h"
+#import "EditCompanyInfoViewController.h"
+#import "EducationFilterView.h"
+#import "CityFilterView.h"
+#import "ChoseTradeViewController.h"
+#import "BaseNavigationController.h"
+#import "ComapnyVerifyViewController.h"
+#import "CompanyHomeBannerModel.h"
+#import "CompanyHomeIndexListModel.h"
+#import "ResumeSearchResultViewController.h"
+@interface CompayHomeVC ()<UITableViewDelegate,UITableViewDataSource,TYCyclePagerViewDataSource,TYCyclePagerViewDelegate>{
+    NSInteger _pageNum;
+    
+    NSInteger _filterCityID;
+    NSString *_filterCity;
+    NSDictionary *_filterTradeDic;
+    
+    BOOL _jumpInfo;
+}
+@property (nonatomic, strong) UITableView *tableV;
+@property (nonatomic, strong) NSArray<CompanyHomeIndexList *> *dataSource;
+@property (nonatomic, strong) TYCyclePagerView *pagerView;
+@property (nonatomic, strong) TYPageControl *pageControl;
+
+@property (nonatomic, strong) UIButton *cityBtn;
+@property (nonatomic, strong) UIButton *otherBtn;
+@property (nonatomic, strong) UIButton *tradeBtn;
+
+@property (nonatomic, strong) CompleteInformationAlertView *completeInfoAlertV;
+@property (nonatomic, strong) EducationFilterView *otherFliterV;
+@property (nonatomic, strong) CityFilterView *cityFilterV;
+
+@property (nonatomic, strong) CompanyHomeBannerModel *bannerM;
+
+//滚动头条内容
+@property (nonatomic, strong) NSArray *topSignImageArr;
+@property (nonatomic, strong) NSArray *topTitleArr;
+@property (nonatomic, strong) NSArray *bottomSignImageArr;
+@property (nonatomic, strong) NSArray *bottomTitleArr;
+
+@property (nonatomic, strong) UIButton *positionBtn;
+
+@property (nonatomic, strong) NSMutableDictionary *paramDataDic;
+
+@end
+
+@implementation CompayHomeVC
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+
+    _jumpInfo = NO;
+    
+    [self initUI];
+    
+    
+    
+}
+
+- (void)didReceiveMemoryWarning {
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+
+-(void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    
+    self.navigationController.navigationBar.translucent = YES;
+    [self.navigationController.navigationBar setBackgroundImage:[UIImage new] forBarMetrics:UIBarMetricsDefault];
+    [self.navigationController.navigationBar setShadowImage:[UIImage new]];
+    
+    [self scrollViewDidScroll:self.tableV];
+}
+-(void)viewWillDisappear:(BOOL)animated {
+    [super viewWillDisappear:animated];
+    
+    self.navigationController.navigationBar.translucent = NO;
+    [self.navigationController.navigationBar setBackgroundImage:nil forBarMetrics:UIBarMetricsDefault];
+    [self.navigationController.navigationBar setShadowImage:nil];
+    
+}
+-(void)viewDidAppear:(BOOL)animated{
+    [super viewDidAppear:animated];
+//    self.completeInfoAlertV.hidden = NO;
+    [self requestBannerData];
+    [self judgeCompanyVerify];
+    
+}
+-(void)judgeCompanyVerify{
+   
+    
+    NSInteger code = AppDelegateInstance.userModel.loginCode;
+    switch (code) {
+        case 2:{//未进行企业认证
+           [self presentViewController:[[BaseNavigationController alloc] initWithRootViewController:[ComapnyVerifyViewController new]] animated:YES completion:nil];
+        }
+            break;
+       
+        case 3:{//完善企业信息,跳转编辑公司界面
+            self.completeInfoAlertV.hidden = _jumpInfo;
+            _pageNum = 1;
+            [self requestListData];
+        }
+        default:{
+            _pageNum = 1;
+            [self requestListData];
+        }
+            break;
+    }
+    
+}
+
+-(void)initUI{
+    
+    [self setNavi];
+    [self.view addSubview:self.tableV];
+    
+    [self.suspendedBtn setImage:[UIImage imageNamed:@"客服1"] forState:UIControlStateNormal];
+    [self showSuspendedBtn:^(UIButton *btn) {
+        
+    }];
+    
+    
+    
+}
+/**
+ 设置导航栏
+ */
+-(void)setNavi {
+    //CGRectMake(0, 0, kScreenWidth, Size(30))
+    UIView *bgView = [[UIView alloc]initWithFrame:CGRectMake(0, kStatusHeight, kScreenWidth, 44)];
+    self.navigationItem.titleView = bgView;
+    //    [bgView mas_makeConstraints:^(MASConstraintMaker *make) {
+    //        make.left.right.top.bottom.mas_offset(0);
+    //        //make.width.mas_equalTo(kScreenWidth);
+    //        //make.height.mas_equalTo(44);
+    //    }];
+    
+    UIButton *positionBtn = [UIButton ym_ButtonWithFrame:CGRectZero title:@"深圳市" backgroundColor:nil titleColor:RGBCOLOR(255, 255, 255) titleSize:Size(12)];
+    [positionBtn setImage:[UIImage imageNamed:@"定位"] forState:UIControlStateNormal];
+    [bgView addSubview:positionBtn];
+    [positionBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.mas_offset(9);
+        make.left.mas_offset(Size(7));
+        make.height.mas_equalTo(54/2);
+    }];
+    self.positionBtn = positionBtn;
+    [positionBtn ym_layoutButtonWithEdgeInsetsStyle:MKButtonEdgeInsetsStyleLeft imageTitleSpace:Size(5)];
+    
+    UIView *searchView = [UIView new];
+    searchView.layer.cornerRadius = 54/4;
+    searchView.clipsToBounds = YES;
+    searchView.backgroundColor = RGBCOLOR(255, 255, 255);
+    [bgView addSubview:searchView];
+    [searchView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(positionBtn.mas_right).mas_offset(Size(15));
+        make.top.mas_offset(9);
+        make.height.mas_equalTo(54/2);
+        make.width.mas_equalTo(Size(493/2));
+    }];
+    
+    UIImageView *searchImageView = [[UIImageView alloc]initWithImage:[UIImage imageNamed:@"首页搜索"]];
+    searchImageView.contentMode = UIViewContentModeScaleAspectFit;
+    [searchView addSubview:searchImageView];
+    [searchImageView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_offset(Size(8));
+        make.width.mas_equalTo(Size(24/2));
+        make.top.bottom.mas_offset(0);
+    }];
+    
+    UILabel *searchLabel = [[UILabel alloc]initWithFrame:CGRectZero];
+    searchLabel.text = @"搜索职位/名称";
+    searchLabel.font = [UIFont systemFontOfSize:Size(12)];
+    searchLabel.textColor = COLOR_RGB_153;
+    [searchView addSubview:searchLabel];
+    [searchLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(searchImageView.mas_right).mas_offset(Size(5));
+        make.width.mas_equalTo(Size(410/2));
+        make.top.bottom.mas_offset(0);
+    }];
+    
+    UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc]initWithTarget:self action:@selector(doSearchView)];
+    [searchView addGestureRecognizer:tap];
+    
+    
+    UIButton *menuBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+    [menuBtn setImage:[UIImage imageNamed:@"菜单"] forState:UIControlStateNormal];
+    menuBtn.imageView.contentMode = UIViewContentModeScaleAspectFit;
+    [menuBtn addTarget:self action:@selector(doMenuBtn) forControlEvents:UIControlEventTouchUpInside];
+    [bgView addSubview:menuBtn];
+    [menuBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(searchView.mas_right).mas_offset(Size(15));
+        make.centerY.equalTo(searchView);
+    }];
+    
+    
+    
+    
+}
+
+#pragma mark - request
+-(void)requestBannerData{
+    
+    [[RHNetAPIManager sharedManager]appCompanyIndexOPT].start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+        if (data) {
+            self.bannerM = [CompanyHomeBannerModel mj_objectWithKeyValues:data];
+            
+            [self.positionBtn setTitle:self.bannerM.data.city forState:UIControlStateNormal];
+            [self.positionBtn ym_layoutButtonWithEdgeInsetsStyle:MKButtonEdgeInsetsStyleLeft imageTitleSpace:Size(5)];
+            _filterCityID = self.bannerM.data.cityId;
+            _filterCity = self.bannerM.data.city;
+            
+//            if (self.bannerM.data.hasRealName == 0) {//是否需要完善信息(0:需要,1:不需要)
+//                self.completeInfoAlertV.hidden = NO;
+//            }
+            
+            NSMutableArray *temp1 = [NSMutableArray array];
+            NSMutableArray *temp11 = [NSMutableArray array];
+            NSMutableArray *temp2 = [NSMutableArray array];
+            NSMutableArray *temp21 = [NSMutableArray array];
+            
+            NSMutableArray *tempArr = [NSMutableArray arrayWithArray:self.bannerM.data.companyTtComment];
+            if (self.bannerM.data.companyTtComment.count % 2 != 0) {
+                [tempArr addObject:@""];
+            }
+            //            [tempArr addObject:@"2222"];
+            //            [tempArr addObject:@"3333"];
+            for (int i=0; i<tempArr.count; i++) {
+                if (i%2 == 0) {
+                    [temp1 addObject:tempArr[i]];
+                    [temp11 addObject:@"toutiao1"];
+                }else{
+                    [temp2 addObject:tempArr[i]];
+                    if ([tempArr[i] isEqualToString:@""]) {
+                        [temp21 addObject:@""];
+                    }else{
+                        [temp21 addObject:@"toutiao1"];
+                    }
+                }
+            }
+            self.topTitleArr = temp1;
+            self.topSignImageArr = temp11;
+            self.bottomTitleArr = temp2;
+            self.bottomSignImageArr = temp21;
+            
+            [self.tableV reloadData];
+            [self.pagerView reloadData];
+            self.pageControl.numberOfPages = self.bannerM.data.bannerList.count;
+        }
+    });
+}
+
+-(void)requestListData{
+    
+    
+    NSMutableDictionary *page = [NSMutableDictionary dictionary];
+    [page setValue:@(_pageNum) forKey:@"currPage"];
+    [page setValue:@10 forKey:@"pageSize"];
+    
+    NSMutableDictionary *paramDic = [NSMutableDictionary dictionary];
+    [paramDic setValue:[self.paramDataDic mj_JSONString] forKey:@"data"];
+    [paramDic setValue:[page mj_JSONString] forKey:@"page"];
+    [paramDic setObject:AppDelegateInstance.token forKey:@"token"];
+    
+    [[RHNetAPIManager sharedManager]appSearchResumeByConditionOPT:paramDic].start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+        if (data) {
+            CompanyHomeIndexListModel *model = [CompanyHomeIndexListModel mj_objectWithKeyValues:data];
+            if (model.data.list.count == 0) {
+                [HUD showHUDError:nil title:@"暂无数据"];
+            }
+            if (_pageNum == 1) {
+                self.dataSource = model.data.list;
+                [self.tableV.mj_header endRefreshing];
+                [self.tableV.mj_footer resetNoMoreData];
+            }else{
+                NSMutableArray *temp = [NSMutableArray arrayWithArray:self.dataSource];
+                [temp addObjectsFromArray:model.data.list];
+                self.dataSource = [temp copy];
+            }
+            if (model.data.isLastPage) {
+                [self.tableV.mj_footer endRefreshingWithNoMoreData];
+            }else{
+                [self.tableV.mj_footer endRefreshing];
+            }
+            
+            [self.tableV reloadData];
+            
+        }else{
+
+            [self.tableV.mj_header endRefreshing];
+            [self.tableV.mj_footer endRefreshing];
+        }
+    });
+}
+#pragma mark - action
+-(void)doSearchView{
+    SearchViewController *vc = [SearchViewController new];
+    [self.navigationController pushViewController:vc animated:YES];
+}
+-(void)doMenuBtn{
+    ResumeSearchResultViewController *vc = [ResumeSearchResultViewController new];
+    vc.title = @"全部分类";
+    [self.navigationController pushViewController:vc animated:YES];
+}
+
+-(void)doTopBtn:(UIButton *)btn{
+    [HUD showHUDError:nil title:btn.titleLabel.text];
+}
+-(void)doHeadViewBtn:(UIButton *)btn{
+    CGRect rect = [btn convertRect:btn.frame toView:self.view];
+    NSLog(@"%@",NSStringFromCGRect(rect));
+    
+    if ([btn isEqual:self.cityBtn]) {
+        self.otherFliterV.hidden = YES;
+        self.cityFilterV.hidden = !self.cityFilterV.hidden;
+        
+        
+        if (self.cityFilterV.hidden == NO) {
+            self.cityFilterV.initCityId = _filterCityID;
+            
+            [self.cityFilterV mas_updateConstraints:^(MASConstraintMaker *make) {
+                make.top.mas_offset(rect.origin.y);
+            }];
+            
+            self.tableV.scrollEnabled = NO;
+        }else{
+            self.tableV.scrollEnabled = YES;
+        }
+        
+        WEAKSELF;
+        _cityFilterV.citySelectedBlock = ^(NSString * _Nonnull cityStr, NSInteger cityId) {
+            [weakSelf.cityBtn setTitle:cityStr forState:UIControlStateNormal];
+            [weakSelf.cityBtn ym_layoutButtonWithEdgeInsetsStyle:MKButtonEdgeInsetsStyleRight imageTitleSpace:Size(7)];
+            _filterCityID = cityId;
+            _filterCity = cityStr;
+            NSLog(@"%@ -- %ld",cityStr,cityId);
+            
+            [weakSelf.paramDataDic setValue:NSStringFromInteger(cityId) forKey:@"aeraId"];
+            _pageNum = 1;
+            [weakSelf requestListData];
+            
+            weakSelf.tableV.scrollEnabled = YES;
+        };
+    }
+    
+    
+    if ([btn isEqual:self.otherBtn]) {
+        self.cityFilterV.hidden = YES;
+        
+        self.otherFliterV.hidden = !self.otherFliterV.hidden;
+        if (self.otherFliterV.hidden == NO) {
+            [self.otherFliterV mas_updateConstraints:^(MASConstraintMaker *make) {
+                
+                make.top.mas_offset(rect.origin.y);
+            }];
+            self.otherFliterV.hidden = NO;
+            self.tableV.scrollEnabled = NO;
+        }else{
+            self.otherFliterV.hidden = YES;
+            self.tableV.scrollEnabled = YES;
+        }
+        
+        WEAKSELF;
+        _otherFliterV.sureBtnBlock = ^(NSString * _Nonnull eduStr, NSString * _Nonnull workStr, NSString * _Nonnull salaStr, NSInteger eduID, NSInteger workID, NSInteger salaID) {
+         
+           NSLog(@"%@ - %ld\n%@ - %ld\n%@ - %ld",eduStr,eduID, workStr,workID, salaStr,salaID);
+            weakSelf.otherFliterV.hidden = YES;
+            
+            [weakSelf.paramDataDic setValue:(eduID<0 ? @"0" : NSStringFromInteger(eduID)) forKey:@"maxEducationLevel"];
+            [weakSelf.paramDataDic setValue:(workID<0 ? @"0" : NSStringFromInteger(workID)) forKey:@"workExpType"];
+            [weakSelf.paramDataDic setValue:(salaID<0 ? @"0" : NSStringFromInteger(salaID)) forKey:@"salaryRangeIds"];
+            
+            _pageNum = 1;
+            [weakSelf requestListData];
+            
+            weakSelf.tableV.scrollEnabled = YES;
+        };
+        
+    }
+    
+    
+    if ([btn isEqual:self.tradeBtn]) {
+        self.tableV.scrollEnabled = YES;
+        self.otherFliterV.hidden = YES;
+        self.cityFilterV.hidden = YES;
+        ChoseTradeViewController *vc = [ChoseTradeViewController new];
+        vc.defaultDic = [_filterTradeDic mutableCopy];
+        vc.multipleCount = 3;
+        WEAKSELF;
+        vc.tradeSelectedBlock = ^(NSDictionary * _Nonnull tradeDic) {
+         
+            NSLog(@"%@",tradeDic);
+            _filterTradeDic = tradeDic;
+            
+            NSMutableArray *temp = [NSMutableArray array];
+            for (Children *c in tradeDic[@"tradeArr"]) {
+                [temp addObject:NSStringFromInteger(c.value)];
+            }
+            
+            [self.paramDataDic setValue:[temp componentsJoinedByString:@","] forKey:@"workClassId"];
+            _pageNum = 1;
+            [weakSelf requestListData];
+        };
+        [self.navigationController pushViewController:vc animated:YES];
+    }
+}
+
+
+#pragma mark - tableView、delegate
+-(UITableView *)tableV{
+    if (!_tableV) {
+        _tableV = [[UITableView alloc]initWithFrame:CGRectMake(0, 0, kScreenWidth, kScreenHeight-kTabBarHeight) style:UITableViewStyleGrouped];
+        if (@available(iOS 11.0, *)) {
+            _tableV.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
+        } else {
+            // Fallback on earlier versions
+        }
+        _tableV.tableFooterView = [UIView new];
+        _tableV.separatorStyle = UITableViewCellSeparatorStyleNone;
+        _tableV.showsVerticalScrollIndicator = NO;
+        _tableV.showsHorizontalScrollIndicator = NO;
+        _tableV.backgroundColor = COLOR_BG;
+        _tableV.dataSource = self;
+        _tableV.delegate = self;
+        
+        _tableV.mj_header = [YMRefreshHeader ym_headerWithRefreshingsBlock:^{
+            _pageNum = 1;
+            [self requestListData];
+        } animated:NO];
+        
+        _tableV.mj_footer = [YMRefreshFooter ym_footerWithRefreshingsBlock:^{
+            _pageNum++;
+            [self requestListData];
+        } animated:NO];
+        
+        UIView *view = [[UIView alloc]initWithFrame:CGRectMake(0, 0, kScreenWidth, Size(128/2+278/2))];
+        view.backgroundColor = RGBCOLOR(255, 255, 255);
+        //UIView *view = [UIView new];
+        _tableV.tableHeaderView = view;
+        
+        
+        TYCyclePagerView *pagerView = [[TYCyclePagerView alloc]init];
+        pagerView.frame = CGRectMake(0, 0, kScreenWidth,Size(128/2+278/2));
+        [view addSubview:pagerView];
+        self.pagerView = pagerView;
+        pagerView.backgroundColor = HEXRGBCOLOR(0xf4f4f4);
+        pagerView.isInfiniteLoop = YES;
+        pagerView.autoScrollInterval = 3;
+        pagerView.dataSource = self;
+        pagerView.delegate = self;
+        [pagerView registerClass:[TYCyclePagerViewCell class] forCellWithReuseIdentifier:@"TYCyclePagerViewCell"];
+        
+        TYPageControl *pageControl = [[TYPageControl alloc]init];
+        pageControl.frame = CGRectMake(0, Size(128/2+278/2)-Size(40), kScreenWidth, Size(40));
+        pageControl.pageIndicatorSize = CGSizeMake(Size(5), Size(5));
+        pageControl.currentPageIndicatorSize = CGSizeMake(Size(8), Size(8));
+        pageControl.pageIndicatorTintColor = HEXRGBACOLOR(0xffffff, 0.5);
+        pageControl.currentPageIndicatorTintColor = HEXRGBCOLOR(0xffffff);
+        [view addSubview:pageControl];
+        self.pageControl = pageControl;
+        self.pageControl.numberOfPages = 3;
+        
+    }
+    
+    return _tableV;
+}
+
+-(NSInteger)numberOfSectionsInTableView:(UITableView *)tableView{
+    return 2;
+}
+-(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section{
+    if (section == 0) {
+        return 1;
+    }
+    return self.dataSource.count;
+}
+-(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
+    if (indexPath.section == 0) {
+        CELL_DEFINE(SliderNewsTableViewCell);
+        
+        cell.topSignImageArr = self.topSignImageArr;
+        cell.topTitleArr = self.topTitleArr;
+        cell.bottomSignImageArr = self.bottomSignImageArr;
+        cell.bottomTitleArr = self.bottomTitleArr;
+        return cell;
+    }
+    CompanyHomeIndexList *list = self.dataSource[indexPath.row];
+    CELL_DEFINE(CompanyHomeCell);
+    cell.list = list;
+    return cell;
+}
+-(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath{
+    if (indexPath.section == 0) {
+        return Size(150/2);
+    }
+    return Size(262/2+5);
+}
+-(UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section{
+    if (section == 1) {
+        UIView *view = [[UIView alloc]initWithFrame:CGRectMake(0, 0, kScreenWidth, Size(135/2))];
+        view.backgroundColor = RGBCOLOR(255, 255, 255);
+        
+        UIButton *btn = [UIButton ym_ButtonWithFrame:CGRectZero title:@"热门简历" backgroundColor:nil titleColor:COLOR_RGB_51 titleSize:Size(15)];
+        [btn setImage:[UIImage imageNamed:@"home_line_blue"] forState:UIControlStateNormal];
+        [view addSubview:btn];
+        [btn mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.left.mas_offset(12);
+            make.top.mas_offset(Size(13));
+            make.height.mas_equalTo(Size(17));
+        }];
+        [btn ym_layoutButtonWithEdgeInsetsStyle:MKButtonEdgeInsetsStyleLeft imageTitleSpace:Size(5)];
+        
+        UIButton *cityBtn = [UIButton ym_ButtonWithFrame:CGRectZero title:@"北京" backgroundColor:nil titleColor:COLOR_RGB_153 titleSize:Size(13)];
+        [view addSubview:cityBtn];
+        [cityBtn setTitle:_filterCity forState:UIControlStateNormal];
+        [cityBtn setImage:[UIImage imageNamed:@"附近职位-箭头"] forState:UIControlStateNormal];
+        self.cityBtn = cityBtn;
+        
+        UIButton *tradeBtn = [UIButton ym_ButtonWithFrame:CGRectZero title:@"行业" backgroundColor:nil titleColor:COLOR_RGB_153 titleSize:Size(15)];
+        [view addSubview:tradeBtn];
+        [tradeBtn setImage:[UIImage imageNamed:@"附近职位-箭头"] forState:UIControlStateNormal];
+        self.tradeBtn = tradeBtn;
+        
+        UIButton *otherBtn = [UIButton ym_ButtonWithFrame:CGRectZero title:@"其他" backgroundColor:nil titleColor:COLOR_RGB_153 titleSize:Size(15)];
+        [view addSubview:otherBtn];
+        [otherBtn setImage:[UIImage imageNamed:@"附近职位-箭头"] forState:UIControlStateNormal];
+        self.otherBtn = otherBtn;
+        
+        
+        NSArray *btnArr = @[cityBtn,tradeBtn,otherBtn];
+        [btnArr mas_distributeViewsAlongAxis:MASAxisTypeHorizontal withFixedSpacing:0.5 leadSpacing:0 tailSpacing:0];
+        [btnArr mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.top.mas_equalTo(btn.mas_bottom).mas_offset(Size(4));
+            make.height.mas_equalTo(Size(64/2));
+        }];
+        
+        
+        [cityBtn ym_layoutButtonWithEdgeInsetsStyle:MKButtonEdgeInsetsStyleRight imageTitleSpace:Size(7)];
+        [otherBtn ym_layoutButtonWithEdgeInsetsStyle:MKButtonEdgeInsetsStyleRight imageTitleSpace:Size(7)];
+        [tradeBtn ym_layoutButtonWithEdgeInsetsStyle:MKButtonEdgeInsetsStyleRight imageTitleSpace:Size(7)];
+        [cityBtn addTarget:self action:@selector(doHeadViewBtn:) forControlEvents:UIControlEventTouchUpInside];
+        [otherBtn addTarget:self action:@selector(doHeadViewBtn:) forControlEvents:UIControlEventTouchUpInside];
+        [tradeBtn addTarget:self action:@selector(doHeadViewBtn:) forControlEvents:UIControlEventTouchUpInside];
+        
+        
+        UIView *line1 = [UIView new];
+        line1.backgroundColor = RGBACOLOR(153, 153, 153, 0.75);
+        [view addSubview:line1];
+        [line1 mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.width.mas_equalTo(0.5);
+            make.height.mas_equalTo(Size(15));
+            make.left.equalTo(cityBtn.mas_right);
+            make.centerY.equalTo(cityBtn.mas_centerY);
+        }];
+        
+        UIView *line2 = [UIView new];
+        line2.backgroundColor = RGBACOLOR(153, 153, 153, 0.75);
+        [view addSubview:line2];
+        [line2 mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.width.mas_equalTo(0.5);
+            make.height.mas_equalTo(Size(15));
+            make.left.equalTo(tradeBtn.mas_right);
+            make.centerY.equalTo(tradeBtn);
+        }];
+        
+        UIView *line3 = [UIView new];
+        line3.backgroundColor = RGBACOLOR(153, 153, 153, 0.75);
+        [view addSubview:line3];
+        [line3 mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.height.mas_equalTo(0.5);
+            make.left.right.mas_offset(0);
+            make.bottom.mas_offset(-0.5);
+        }];
+        
+        return view;
+    }
+    return [UIView new];
+}
+-(CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section{
+    if (section == 1) {
+        return Size(135/2);
+    }
+    return CGFLOAT_MIN;
+}
+-(UIView *)tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section{
+    return [UIView new];
+}
+-(CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section{
+    return CGFLOAT_MIN;
+}
+
+-(void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath{
+    if (indexPath.section == 1) {
+        ResumeDetailViewController *vc = [ResumeDetailViewController new];
+        vc.resumeId = NSStringFromInteger(self.dataSource[indexPath.row].resume_id);
+        [self.navigationController pushViewController:vc animated:YES];
+    }
+}
+
+
+#pragma mark - scroll delegate
+-(void)scrollViewDidScroll:(UIScrollView *)scrollView{
+    
+    //计算滚动的便宜量
+    CGFloat offSetY = scrollView.contentOffset.y;
+    
+    // 处理导航条
+    // 计算当前的透明度
+    CGFloat alpha = offSetY / Size(278/2);
+    self.navigationController.navigationBar.barTintColor = RGBACOLOR(75, 179, 240, alpha);
+    
+    //NSLog(@"%f",offSetY);
+    if (offSetY > Size(278/2)) {
+        [self.navigationController.navigationBar setBackgroundImage:nil forBarMetrics:UIBarMetricsDefault];
+    }else{
+        //[self.navigationController.navigationBar setBackgroundImage:[UIImage new] forBarMetrics:UIBarMetricsDefault];
+        [self.navigationController.navigationBar setBackgroundImage:[UIImage ym_imageWithColor:RGBACOLOR(75, 179, 240, alpha) size:CGSizeMake(kScreenWidth, kNavBarHeight)] forBarMetrics:UIBarMetricsDefault];
+    }
+    
+    
+    
+    
+    //设置标题的透明度
+    //self.titleL.textColor = [UIColor colorWithWhite:0 alpha:alpha];
+    
+    // 获取导航条的颜色
+    //UIColor *navColor = [UIColor colorWithWhite:1 alpha:alpha];
+    
+    // 设置导航条背景图片
+    //[self.navigationController.navigationBar setBackgroundImage:[UIImage imageWithColor:navColor] forBarMetrics:UIBarMetricsDefault];
+    
+    
+}
+
+
+#pragma mark - pageView delegate
+-(NSInteger)numberOfItemsInPagerView:(TYCyclePagerView *)pageView{
+    return self.bannerM.data.bannerList.count;
+}
+
+-(UICollectionViewCell *)pagerView:(TYCyclePagerView *)pagerView cellForItemAtIndex:(NSInteger)index{
+    TYCyclePagerViewCell *cell = [pagerView dequeueReusableCellWithReuseIdentifier:@"TYCyclePagerViewCell" forIndex:index];
+    
+    //[cell.contentImage ym_setImageWithURL:self.bannerImageArr[index] placeholderImage:[UIImage imageNamed:@"banner"]];
+     [cell.contentImage sd_setImageWithURL:[NSURL URLWithString:self.bannerM.data.bannerList[index].file_url] placeholderImage:[UIImage imageNamed:@"banner"]];
+    //cell.contentImage.image = [UIImage imageNamed:@"banner"];
+    return cell;
+}
+- (TYCyclePagerViewLayout *)layoutForPagerView:(TYCyclePagerView *)pageView{
+    TYCyclePagerViewLayout *layout = [[TYCyclePagerViewLayout alloc]init];
+    
+    //layout.itemSpacing = 5;
+    layout.itemSize = CGSizeMake(kScreenWidth, Size(128/2+278/2));
+    layout.layoutType = TYCyclePagerTransformLayoutNormal;
+    //layout.minimumAlpha = 0.3;
+    layout.itemHorizontalCenter = YES;
+    layout.itemVerticalCenter= NO;
+    layout.adjustSpacingWhenScroling = NO;
+    
+    return layout;
+}
+- (void)pagerView:(TYCyclePagerView *)pageView didScrollFromIndex:(NSInteger)fromIndex toIndex:(NSInteger)toIndex {
+    self.pageControl.currentPage = toIndex;
+}
+
+- (void)pagerView:(TYCyclePagerView *)pageView didSelectedItemCell:(__kindof UICollectionViewCell *)cell atIndex:(NSInteger)index{
+    //    if (self.bannerImageClickBlock) {
+    //        self.bannerImageClickBlock(index);
+    //    }
+}
+
+
+#pragma mark - 懒加载
+-(CompleteInformationAlertView *)completeInfoAlertV{
+    if (!_completeInfoAlertV) {
+        _completeInfoAlertV = [[CompleteInformationAlertView alloc]initWithFrame:CGRectMake(0, 0, kScreenWidth, self.view.height)];
+        _completeInfoAlertV.allStr = @"赶快去完善企业信息，发现更多优秀的人";
+        _completeInfoAlertV.hrefStr = @"企业信息";
+        _completeInfoAlertV.hidden = YES;
+        [self.view addSubview:_completeInfoAlertV];
+        
+        WEAKSELF;
+        _completeInfoAlertV.completeInfoBlock = ^{
+            NSLog(@"完善个人信息");
+            EditCompanyInfoViewController *vc = [EditCompanyInfoViewController new];
+            [weakSelf.navigationController pushViewController:vc animated:YES];
+            weakSelf.completeInfoAlertV.hidden = YES;
+        };
+        _completeInfoAlertV.skipBtnBlock = ^{
+            _jumpInfo = YES;
+        };
+    }
+    return _completeInfoAlertV;
+}
+-(EducationFilterView *)otherFliterV{
+    if (!_otherFliterV) {
+        _otherFliterV = [[EducationFilterView alloc]initWithFrame:CGRectZero];
+        [self.view addSubview:_otherFliterV];
+        [_otherFliterV mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.left.right.bottom.mas_offset(0);
+        }];
+        
+        _otherFliterV.hidden = YES;
+    }
+    return _otherFliterV;
+}
+-(CityFilterView *)cityFilterV{
+    if (!_cityFilterV) {
+        _cityFilterV = [[CityFilterView alloc]initWithFrame:CGRectZero];
+        [self.view addSubview:_cityFilterV];
+        [_cityFilterV mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.left.right.bottom.mas_offset(0);
+        }];
+        
+        _cityFilterV.hidden = YES;
+    }
+    return _cityFilterV;
+}
+
+
+-(NSMutableDictionary *)paramDataDic{
+    if (!_paramDataDic) {
+        _paramDataDic = [NSMutableDictionary dictionary];
+    }
+    return _paramDataDic;
+}
+@end

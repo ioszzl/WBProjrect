@@ -1,0 +1,85 @@
+//
+//  UploadImageView.m
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/12.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "UploadImageView.h"
+
+@implementation UploadImageView
+- (instancetype)init
+{
+    self = [super init];
+    if (self) {
+        [self initUI];
+    }
+    return self;
+}
+
+- (instancetype)initWithFrame:(CGRect)frame
+{
+    self = [super initWithFrame:frame];
+    if (self) {
+        [self initUI];
+    }
+    return self;
+}
+-(void)initUI{
+    /*虚线边框
+    CAShapeLayer *border = [CAShapeLayer layer];
+    
+    //虚线的颜色
+    border.strokeColor = [UIColor redColor].CGColor;
+    //填充的颜色
+    border.fillColor = [UIColor clearColor].CGColor;
+    
+    UIBezierPath *path = [UIBezierPath bezierPathWithRoundedRect:self.bounds cornerRadius:5];
+    
+    //设置路径
+    border.path = path.CGPath;
+    
+    border.frame = self.bounds;
+    //虚线的宽度
+    border.lineWidth = 1.f;
+    
+    
+    //设置线条的样式
+    //    border.lineCap = @"square";
+    //虚线的间隔
+    border.lineDashPattern = @[@4, @2];
+    
+    self.layer.cornerRadius = 5.f;
+    self.layer.masksToBounds = YES;
+    
+    [self.layer addSublayer:border];
+    */
+    
+    self.backgroundColor = RGBCOLOR(255, 255, 255);
+    self.layer.cornerRadius = Size(5);
+    self.clipsToBounds = YES;
+    self.layer.borderWidth = 0.5;
+    self.layer.borderColor = COLOR_RGB_line.CGColor;
+    
+    _imgV = [UIImageView new];
+    [self addSubview:_imgV];
+    [_imgV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.edges.mas_equalTo(UIEdgeInsetsMake(Size(9), Size(9), Size(9), Size(9)));
+    }];
+}
+
+-(void)setImage:(UIImage *)image{
+    _image = image;
+    
+    self.imgV.image = image;
+}
+/*
+// Only override drawRect: if you perform custom drawing.
+// An empty implementation adversely affects performance during animation.
+- (void)drawRect:(CGRect)rect {
+    // Drawing code
+}
+*/
+
+@end

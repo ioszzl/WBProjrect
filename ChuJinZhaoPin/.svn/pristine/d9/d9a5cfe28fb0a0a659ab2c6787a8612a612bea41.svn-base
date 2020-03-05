@@ -1,0 +1,23 @@
+//
+//  QMChatHead.h
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/12/6.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#ifndef QMChatHead_h
+#define QMChatHead_h
+
+
+#define kMainCellColor [UIColor colorWithRed:248/255.0 green:248/255.0 blue:255/255.0 alpha:1]
+
+#define kInputViewHeight 50
+
+#import "MLEmojiLabel.h"
+#import "QMDateManager.h"
+
+#define QM_IS_IPHONEX  IPHONEX
+#endif /* QMChatHead_h */
+
+

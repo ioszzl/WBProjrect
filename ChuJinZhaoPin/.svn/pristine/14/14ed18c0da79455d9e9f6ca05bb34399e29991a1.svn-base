@@ -1,0 +1,17 @@
+//
+//  ResumeUserInfoModel.m
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/26.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "ResumeUserInfoModel.h"
+
+@implementation ResumeUserInfoModel
+
+@end
+
+@implementation ResumeUserInfoData
+
+@end

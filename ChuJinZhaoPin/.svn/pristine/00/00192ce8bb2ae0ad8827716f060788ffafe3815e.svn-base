@@ -1,0 +1,21 @@
+//
+//  InterviewInitModel.m
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/30.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "InterviewInitModel.h"
+
+@implementation InterviewInitModel
+
+@end
+@implementation InterviewInitContactsList
+
+@end
+@implementation InterviewInitData
++(NSDictionary *)mj_objectClassInArray{
+    return @{@"contactsList":[InterviewInitContactsList class]};
+}
+@end

@@ -1,0 +1,103 @@
+//
+//  CompanyIntroViewController.m
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/12.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "CompanyIntroViewController.h"
+#import "YMTextView.h"
+#import "CompanyEnvironmentViewController.h"
+@interface CompanyIntroViewController ()
+@property (nonatomic, strong) YMTextView *introTextV;
+@end
+
+@implementation CompanyIntroViewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    [self initUI];
+}
+-(void)initUI{
+    self.title = @"公司介绍";
+    
+    UIView *bgV = [UIView new];
+    bgV.backgroundColor = RGBCOLOR(255, 255, 255);
+    [self.view addSubview:bgV];
+    [bgV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.right.mas_offset(0);
+        make.top.mas_offset(Size(10));
+        make.height.mas_equalTo(Size(330/2));
+    }];
+    
+    UILabel *itemLab = [UILabel ym_labelWithFrame:CGRectZero font:[UIFont systemFontOfSize:Size(18)] textColor:COLOR_RGB_51];
+    itemLab.text = @"公司介绍";
+    [bgV addSubview:itemLab];
+    [itemLab mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_offset(Size(15));
+        make.top.mas_offset(Size(20));
+    }];
+    
+    _introTextV = [YMTextView new];
+    _introTextV.placeholder = @"请简单介绍您们公司的企业文化和公司成就";
+    _introTextV.font = [UIFont systemFontOfSize:Size(14)];
+    _introTextV.textColor = COLOR_RGB_51;
+    [bgV addSubview:_introTextV];
+    [_introTextV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_offset(Size(15));
+        make.right.mas_offset(-Size(15));
+        make.top.equalTo(itemLab.mas_bottom).mas_offset(Size(15));
+        make.bottom.mas_offset(-Size(20));
+    }];
+    _introTextV.text = self.model.data.company_describe;
+    
+    UIButton *nextBtn = [UIButton ym_ButtonWithFrame:CGRectZero title:@"下一步" backgroundColor:COLOR_MAIN_ENTERPRISE titleColor:RGBCOLOR(255, 255, 255) titleSize:Size(17)];
+    nextBtn.layer.cornerRadius = Size(5);
+    [self.view addSubview:nextBtn];
+    [nextBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_offset(Size(15));
+        make.width.mas_equalTo(kScreenWidth-Size(30));
+        make.top.equalTo(bgV.mas_bottom).mas_offset(Size(50));
+        make.height.mas_equalTo(Size(98/2));
+    }];
+    [nextBtn addTarget:self action:@selector(doNextBtn) forControlEvents:UIControlEventTouchUpInside];
+}
+
+#pragma mark - action
+-(void)doNextBtn{
+    if (self.introTextV.text.length == 0) {
+        [HUD showHUDError:nil title:@"请填写公司介绍"];
+        return;
+    }
+    NSMutableDictionary *dataDic = [NSMutableDictionary dictionary];
+    [dataDic setValue:NSStringFromInteger(self.model.data.ID) forKey:@"id"];
+    [dataDic setValue:self.introTextV.text forKey:@"companyDescribe"];
+    
+    NSMutableDictionary *paramDic = [NSMutableDictionary dictionary];
+    [paramDic setValue:[dataDic mj_JSONString] forKey:@"data"];
+    [paramDic setValue:AppDelegateInstance.token forKey:@"token"];
+    
+    [[RHNetAPIManager sharedManager]appSaveInfoCenterCompanyOPT:paramDic].start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+        if (data) {
+            [HUD showHUDError:nil title:@"已保存"];
+            CompanyEnvironmentViewController *vc = [CompanyEnvironmentViewController new];
+            vc.model = self.model;
+            [self.navigationController pushViewController:vc animated:YES];
+        }
+        
+    });
+    
+}
+/*
+#pragma mark - Navigation
+
+// In a storyboard-based application, you will often want to do a little preparation before navigation
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
+    // Get the new view controller using [segue destinationViewController].
+    // Pass the selected object to the new view controller.
+}
+*/
+
+@end

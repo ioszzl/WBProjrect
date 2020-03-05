@@ -1,0 +1,13 @@
+//
+//  CompayHomeVC.h
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/8.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "BaseViewController.h"
+
+@interface CompayHomeVC : BaseViewController
+
+@end

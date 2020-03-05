@@ -1,0 +1,21 @@
+//
+//  ResumeListModel.m
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/29.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "ResumeListModel.h"
+
+@implementation ResumeListModel
+
+@end
+@implementation ResumeList
+
+@end
+@implementation ResumeListData
++(NSDictionary *)mj_objectClassInArray{
+    return @{@"list":[ResumeList class]};
+}
+@end

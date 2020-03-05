@@ -1,0 +1,61 @@
+//
+//  CompanyDetailInfoModel.h
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/28.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "BaseModel.h"
+
+NS_ASSUME_NONNULL_BEGIN
+@interface CompanyDetailInfoScoreMap : NSObject
+@property (nonatomic, copy) NSString            * totalStar;//": "3.9", 综合评分
+@property (nonatomic, copy) NSString            * realStar;//": "4.0",  信息真实性
+@property (nonatomic, copy) NSString            * interStar;//": "3.7", 面试官
+@property (nonatomic, copy) NSString            * enviStar;//": "4.0"   公司环境
+@end
+
+@interface CompanyDetailInfoImageList : NSObject
+@property (nonatomic, assign) NSInteger         imageId;//": 914,
+@property (nonatomic, copy) NSString            * imageUrl;// 环境图片全地址
+@end
+
+@interface CompanyDetailInfoData : NSObject
+@property (nonatomic, copy) NSString            * company_email;//公司邮箱
+@property (nonatomic, copy) NSString            *phone;
+@property (nonatomic, assign) NSInteger         company_area_id;//公司区域id
+@property (nonatomic, copy) NSString            * position_name;//": "上海市",//公司区域地址
+@property (nonatomic, copy) NSString            * scale_str;//": "500人以上",//公司规模
+@property (nonatomic, copy) NSString            * company_type_str;//": "股份制",
+@property (nonatomic, assign) NSInteger         logo;//": 994,  公司头像id
+@property (nonatomic, copy) NSString            * scale;//": "1",   公司规模 '企业规模(0:1-50人；1:50-100人；2：100-500人；3：500人以上)',
+@property (nonatomic, copy) NSString            * desCardId;//": "3,1", 描述id
+@property (nonatomic, strong) NSArray<NSString *> *describeList;//":描述集合
+@property (nonatomic, copy) NSString            * city;//": "深圳市", 定位城市名称
+@property (nonatomic, assign) NSInteger         cityId;//": 440300, 定位城市id
+@property (nonatomic, copy) NSString            * company_address;//": "广东省深圳市宝安区西乡大道固戍地铁站F出口", 公司地址
+@property (nonatomic, copy) NSString            * company_environmental_pic_ids;//": "914,1009,1010,917,918", 环境图片ids
+@property (nonatomic, assign) NSInteger         postNum;//": 6, 收藏数量
+@property (nonatomic, assign) NSInteger         company_type;//": 2, '0.上市公司 1.国企 2.民营 3.股份制 4.事业单位5.国家机关 6.合资 -1.其他',
+//公司介绍
+@property (nonatomic, copy) NSString            * company_describe;
+@property (nonatomic, copy) NSString            * describ;//": "通信/电信运营、增值服务", 行业类别
+@property (nonatomic, assign) NSInteger         describ_id;//行业类别id
+@property (nonatomic, copy) NSString            * logoUrl;// logo地址
+@property (nonatomic, copy) NSString            * company_host_url;//": "www.icmao.com", 公司官网 ** 注意这个官网地址要求能够点击链接  需拼接http:// + company_host_url 地址
+@property (nonatomic, assign) NSInteger         commentNum;//": 3,评价数量
+@property (nonatomic, assign) NSInteger         ID;//": 3, 公司id
+@property (nonatomic, assign) NSInteger         information_status;//'信息状态（1、待审核 2、审核通过 3、 审核不通过）',
+@property (nonatomic, copy) NSString            * legal_person;//法人代表
+@property (nonatomic, strong) NSArray<CompanyDetailInfoImageList *> *imageList;//
+@property (nonatomic, copy) NSString            * company_name;// 公司名称
+@property (nonatomic, copy) NSString            * company_info_remake;// 企业信息认证描述
+@property (nonatomic, strong) CompanyDetailInfoScoreMap  *scoreMap;
+@end
+
+@interface CompanyDetailInfoModel : BaseModel
+@property (nonatomic, strong) CompanyDetailInfoData *data;
+@end
+
+NS_ASSUME_NONNULL_END

@@ -1,0 +1,213 @@
+//
+//  PositionInfoTableViewCell.m
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/15.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "PositionInfoTableViewCell.h"
+
+@implementation PositionInfoTableViewCell
+-(instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier{
+    self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
+    if (self) {
+        self.selectionStyle = UITableViewCellSelectionStyleNone;
+        [self initUI];
+    }
+    return self;
+}
+-(void)initUI{
+    self.backgroundColor = COLOR_BG;
+    
+    UIView *bgV = [UIView new];
+    bgV.backgroundColor = RGBCOLOR(255, 255, 255);
+    [self.contentView addSubview:bgV];
+    [bgV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_offset(Size(15));
+        make.top.bottom.mas_offset(0);
+        make.right.mas_offset(-Size(15));
+    }];
+    //延时下一帧 获取View的frame
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        UIBezierPath *maskPath = [UIBezierPath bezierPathWithRoundedRect:bgV.bounds byRoundingCorners:(UIRectCornerBottomLeft | UIRectCornerBottomRight) cornerRadii:CGSizeMake(Size(5),Size(5))];//圆角大小
+        CAShapeLayer *maskLayer = [[CAShapeLayer alloc] init];
+        maskLayer.frame = bgV.bounds;
+        maskLayer.path = maskPath.CGPath;
+        //_bgV.layer.mask = maskLayer;
+    });
+    _nameLab = [UILabel ym_labelWithFrame:CGRectZero font:[UIFont boldSystemFontOfSize:Size(17)] textColor:COLOR_RGB_51];
+    [bgV addSubview:_nameLab];
+    [_nameLab mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_offset(Size(15));
+        make.top.mas_offset(Size(20));
+    }];
+    
+    
+    _moneyLab = [UILabel ym_labelWithFrame:CGRectZero font:[UIFont boldSystemFontOfSize:Size(19)] textColor:RGBCOLOR(255, 101, 64)];
+    [bgV addSubview:_moneyLab];
+    [_moneyLab mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.mas_offset(Size(-15));
+        make.top.mas_offset(Size(20));
+    }];
+    
+    
+    UIImageView *yearImgV = [[UIImageView alloc]initWithImage:[UIImage imageNamed:@"工作年限"]];
+    [bgV addSubview:yearImgV];
+    [yearImgV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_offset(Size(15));
+        make.top.equalTo(_nameLab.mas_bottom).mas_offset(Size(34/2));
+        make.width.mas_equalTo(Size(32/2));
+        make.height.mas_equalTo(Size(32/2));
+    }];
+    
+    _yearLab = [UILabel ym_labelWithFrame:CGRectZero font:[UIFont systemFontOfSize:Size(14)] textColor:RGBCOLOR(102, 102, 102)];
+    _yearLab.numberOfLines = 1;
+    [bgV addSubview:_yearLab];
+    [_yearLab mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(yearImgV.mas_right).mas_offset(Size(4));
+        make.centerY.equalTo(yearImgV);
+    }];
+    
+    
+    UIImageView *educationImgV = [[UIImageView alloc]initWithImage:[UIImage imageNamed:@"学历"]];
+    [bgV addSubview:educationImgV];
+    [educationImgV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(_yearLab.mas_right).mas_offset(Size(12));
+        make.centerY.equalTo(_yearLab);
+        make.width.mas_equalTo(Size(32/2));
+        make.height.mas_equalTo(Size(32/2));
+    }];
+    
+    _educationLab = [UILabel ym_labelWithFrame:CGRectZero font:[UIFont systemFontOfSize:Size(14)] textColor:RGBCOLOR(102, 102, 102)];
+    _educationLab.numberOfLines = 1;
+    [bgV addSubview:_educationLab];
+    [_educationLab mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(educationImgV.mas_right).mas_offset(Size(4));
+        make.centerY.equalTo(educationImgV);
+    }];
+    
+    
+    UIImageView *tradeImgV = [[UIImageView alloc]initWithImage:[UIImage imageNamed:@"行业"]];
+    [bgV addSubview:tradeImgV];
+    [tradeImgV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(_educationLab.mas_right).mas_offset(Size(12));
+        make.centerY.equalTo(_educationLab);
+        make.width.mas_equalTo(Size(32/2));
+        make.height.mas_equalTo(Size(32/2));
+    }];
+    
+    _tradeLab = [UILabel ym_labelWithFrame:CGRectZero font:[UIFont systemFontOfSize:Size(14)] textColor:RGBCOLOR(102, 102, 102)];
+    _tradeLab.numberOfLines = 1;
+    [bgV addSubview:_tradeLab];
+    [_tradeLab mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(tradeImgV.mas_right).mas_offset(Size(4));
+        make.centerY.equalTo(tradeImgV);
+        make.right.mas_lessThanOrEqualTo(-Size(10));
+    }];
+    
+    
+    NSArray *labArr = @[@"",@"",@"",@"",@""];
+    UILabel *tempLab;
+    for (int i=0; i<labArr.count; i++) {
+        UILabel *lab = [UILabel ym_labelWithFrame:CGRectZero font:FONT_SIZE_12 textColor:COLOR_RGB_153 textAlignment:NSTextAlignmentCenter];
+        lab.backgroundColor = COLOR_BG;
+        lab.layer.cornerRadius = Size(5);
+        [bgV addSubview:lab];
+        lab.text = labArr[i];
+        //CGFloat w = [labArr[i] ym_getStringWidthfont:FONT_SIZE_12] + Size(8);
+        [lab mas_makeConstraints:^(MASConstraintMaker *make) {
+            if (!tempLab) {
+                make.left.mas_offset(Size(15));
+            }else{
+                make.left.equalTo(tempLab.mas_right).mas_offset(Size(7));
+            }
+            make.top.equalTo(yearImgV.mas_bottom).mas_offset(Size(9));
+            //make.width.mas_equalTo(w);
+            make.height.mas_equalTo(Size(36/2));
+        }];
+        
+        tempLab = lab;
+        [self.tagLabArr addObject:lab];
+
+    }
+    
+    
+    UIView *line = [UIView new];
+    line.backgroundColor = RGBCOLOR(230, 230, 230);
+    [bgV addSubview:line];
+    [line mas_makeConstraints:^(MASConstraintMaker *make) {
+        if (tempLab) {
+            make.top.equalTo(tempLab.mas_bottom).mas_offset(Size(10));
+        }else{
+            make.top.equalTo(yearImgV.mas_bottom).mas_offset(Size(10));
+        }
+        
+        make.height.mas_equalTo(0.5);
+        make.left.right.mas_offset(0);
+        make.bottom.mas_offset(-Size(70/2));
+    }];
+    
+    UIImageView *positIcon = [[UIImageView alloc]initWithImage:[UIImage imageNamed:@"职位详情-定位"]];
+    [bgV addSubview:positIcon];
+    [positIcon mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_offset(Size(30/2));
+        make.centerY.equalTo(bgV.mas_bottom).mas_offset(-Size(70/4));
+        make.width.mas_equalTo(Size(12));
+        make.height.mas_equalTo(Size(16));
+    }];
+    
+    _addressLab = [UILabel ym_labelWithFrame:CGRectZero font:FONT_SIZE_12 textColor:COLOR_RGB_153];
+    _addressLab.adjustsFontSizeToFitWidth = YES;
+    [bgV addSubview:_addressLab];
+    [_addressLab mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(positIcon.mas_right).mas_offset(Size(5));
+        make.centerY.equalTo(positIcon);
+        make.right.mas_lessThanOrEqualTo(-Size(10));
+    }];
+    
+    
+//    _nameLab.text = @"产品经理";
+//    _moneyLab.text = @"7~9K";
+//    _yearLab.text = @"1-3年";
+//    _educationLab.text = @"本科";
+//    _tradeLab.text = @"移动互联网";
+//    _addressLab.text = @"北京市 海淀区中关村科贸电子城7层";
+}
+
+-(void)setMarkArr:(NSArray *)markArr{
+    _markArr = markArr;
+    
+    for (int i=0; i<markArr.count; i++) {
+        self.tagLabArr[i].text = markArr[i];
+        [self.tagLabArr[i] mas_updateConstraints:^(MASConstraintMaker *make) {
+            
+            if (i == markArr.count-1) {
+                make.width.mas_equalTo([self.tagLabArr[i].text ym_getStringWidthfont:[UIFont systemFontOfSize:Size(12)]] + Size(10)).priorityHigh();
+                make.right.mas_lessThanOrEqualTo(Size(15));
+            }else{
+                make.width.mas_equalTo([self.tagLabArr[i].text ym_getStringWidthfont:[UIFont systemFontOfSize:Size(12)]] + Size(10));
+            }
+        }];
+    }
+    
+}
+
+- (NSMutableArray<UILabel *> *)tagLabArr{
+    if (!_tagLabArr) {
+        _tagLabArr = [NSMutableArray array];
+    }
+    return _tagLabArr;
+}
+- (void)awakeFromNib {
+    [super awakeFromNib];
+    // Initialization code
+}
+
+- (void)setSelected:(BOOL)selected animated:(BOOL)animated {
+    [super setSelected:selected animated:animated];
+
+    // Configure the view for the selected state
+}
+
+@end

@@ -1,0 +1,410 @@
+//
+//  ChatViewController.m
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/6.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "ChatViewController.h"
+#import "ChatOtherTableViewCell.h"
+#import "ChatMineTableViewCell.h"
+#import "ChatJobHeadView.h"
+#import <IQKeyboardManager/IQKeyboardManager.h>
+#import "ChatHistoryListViewController.h"
+#import "ECMessage.h"
+#import "ECDevice.h"
+#import "DeviceDelegateHelper.h"
+#import "ChatTopModel.h"
+#import "ChatResumeHeadView.h"
+@interface ChatViewController ()<UITableViewDelegate,UITableViewDataSource,UITextViewDelegate>
+@property (nonatomic, strong) UITableView *tableV;
+@property (nonatomic, strong) UITextView *messageTextV;
+@property (nonatomic, strong) UIView *bottomV;
+
+@property (nonatomic, strong) UILabel *jobLab;
+@property (nonatomic, strong) ChatJobHeadView *jobHeadV;
+@property (nonatomic, strong) ChatResumeHeadView *resumeHeadV;
+
+
+@property (nonatomic, strong) NSArray *dataSource;
+
+@property (nonatomic, strong) ChatTopModel *topModel;
+@end
+
+@implementation ChatViewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    [self initUI];
+    self.dataSource = @[@1,@2,@3,@4,@5,@6,@7,@8,@9,@0];
+    //监听键盘的通知
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillChangeFrameNotify:) name:UIKeyboardWillChangeFrameNotification object:nil];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveMessage:) name:KNOTIFICATION_ReceiveMessage object:nil];
+    
+    [self requestTopData];
+}
+-(void)viewDidAppear:(BOOL)animated{
+    [super viewDidAppear:animated];
+    [[IQKeyboardManager sharedManager] setEnable:NO];
+}
+-(void)viewDidDisappear:(BOOL)animated{
+    [super viewWillDisappear:animated];
+    [[IQKeyboardManager sharedManager] setEnable:YES];
+}
+-(void)initUI{
+    
+    
+    _tableV = [[UITableView alloc]initWithFrame:CGRectZero style:UITableViewStyleGrouped];
+    _tableV.separatorStyle = UITableViewCellSeparatorStyleNone;
+    _tableV.showsVerticalScrollIndicator = NO;
+    _tableV.showsHorizontalScrollIndicator = NO;
+    _tableV.backgroundColor = RGBCOLOR(235, 235, 235);
+    _tableV.dataSource = self;
+    _tableV.delegate = self;
+    [self.view addSubview:_tableV];
+    [_tableV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.top.right.mas_offset(0);
+    }];
+    
+    //_tableV.estimatedRowHeight = 0;
+    _tableV.estimatedSectionHeaderHeight = 0;
+    _tableV.estimatedSectionFooterHeight = 0;
+    
+    _tableV.rowHeight = UITableViewAutomaticDimension;
+    
+    
+    UIView * view = [[UIView alloc]initWithFrame:CGRectMake(0, 0, kScreenWidth, Size(408/2))];
+    _tableV.tableHeaderView = view;
+    
+    UILabel *jobLab = [UILabel ym_labelWithFrame:CGRectZero font:FONT_SIZE_12 textColor:COLOR_RGB_102 textAlignment:NSTextAlignmentCenter];
+    jobLab.text = [NSString stringWithFormat:@"正在沟通的职位：%@",@"产品经理"];
+    [view addSubview:jobLab];
+    [jobLab mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.centerX.equalTo(view);
+        make.top.mas_offset(15);
+    }];
+    self.jobLab = jobLab;
+    
+    ChatJobHeadView *jobHeadV = [[ChatJobHeadView alloc] init];
+    [view addSubview:jobHeadV];
+    [jobHeadV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_offset(Size(15));
+        make.top.equalTo(jobLab.mas_bottom).mas_offset(Size(13));
+        make.right.mas_offset(-Size(15));
+        make.height.mas_equalTo(Size(254/2));
+    }];
+    self.jobHeadV = jobHeadV;
+    
+    self.resumeHeadV = [[ChatResumeHeadView alloc] init];
+    [view addSubview:_resumeHeadV];
+    [_resumeHeadV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_offset(Size(15));
+        make.top.equalTo(jobLab.mas_bottom).mas_offset(Size(13));
+        make.right.mas_offset(-Size(15));
+        make.height.mas_equalTo(Size(254/2));
+    }];
+   
+    
+    
+    _bottomV = [UIView new];
+    [self.view addSubview:_bottomV];
+    [_bottomV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.right.bottom.mas_offset(0);
+        make.top.equalTo(_tableV.mas_bottom);
+    }];
+    _bottomV.backgroundColor = RGBCOLOR(245, 245, 247);
+    
+    _messageTextV = [UITextView new];
+    _messageTextV.layer.cornerRadius = Size(5);
+    _messageTextV.layer.borderWidth = 0.5;
+    _messageTextV.layer.borderColor = COLOR_RGB_line.CGColor;
+    _messageTextV.font = [UIFont systemFontOfSize:Size(13)];
+    _messageTextV.showsHorizontalScrollIndicator = NO;
+    [_bottomV addSubview:_messageTextV];
+    [_messageTextV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_offset(Size(9));
+        make.top.equalTo(_bottomV.mas_top).mas_offset(Size(7));
+        make.bottom.mas_offset(-Size(7)-kSecrityHeight);
+        make.right.mas_offset(-Size(152/2));
+        make.height.mas_equalTo(Size(62/2));
+    }];
+    _messageTextV.delegate = self;
+    //当textview的字符串为0时发送（rerurn）键无效
+    _messageTextV.enablesReturnKeyAutomatically = YES;
+    //_messageTextV.keyboardType = UIKeyboardTypeDefault;
+    //键盘return样式变成发送
+    _messageTextV.returnKeyType = UIReturnKeySend;
+
+    
+    
+//    UIButton *emojiBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+//    [emojiBtn setImage:[UIImage imageNamed:@"表情"] forState:UIControlStateNormal];
+//    [_bottomV addSubview:emojiBtn];
+//    [emojiBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+//        make.left.equalTo(_messageTextV.mas_right).mas_offset(Size(8));
+//        make.top.mas_offset(Size(9));
+//        make.width.height.mas_equalTo(Size(54/2));
+//    }];
+//    [emojiBtn addTarget:self action:@selector(doEmojiBtn) forControlEvents:UIControlEventTouchUpInside];
+//
+//    UIButton *historyBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+//    [historyBtn setImage:[UIImage imageNamed:@"历史"] forState:UIControlStateNormal];
+//    [_bottomV addSubview:historyBtn];
+//    [historyBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+//        make.left.equalTo(emojiBtn.mas_right).mas_offset(Size(6));
+//        make.top.mas_offset(Size(9));
+//        make.width.height.mas_equalTo(Size(54/2));
+//    }];
+//    [historyBtn addTarget:self action:@selector(doHistoryBtn) forControlEvents:UIControlEventTouchUpInside];
+    
+    UIButton *sendBtn = [UIButton ym_ButtonWithFrame:CGRectZero title:@"发送" backgroundColor:COLOR_MAIN titleColor:[UIColor whiteColor] titleSize:Size(14)];
+    sendBtn.layer.cornerRadius = Size(5);
+    sendBtn.clipsToBounds = YES;
+    [_bottomV addSubview:sendBtn];
+    [sendBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(_messageTextV.mas_right).mas_offset(Size(8));
+        make.height.mas_equalTo(Size(54/2));
+        make.width.mas_equalTo(Size(54 + 6));
+        make.top.mas_offset(Size(9));
+    }];
+    [sendBtn addTarget:self action:@selector(doSendBtn) forControlEvents:UIControlEventTouchUpInside];
+}
+
+- (void)navigationController:(UINavigationController *)navigationController willShowViewController:(UIViewController *)viewController animated:(BOOL)animated {
+    if (viewController == self) {
+        self.navigationController.navigationBar.hidden = NO;
+    }
+}
+-(void)updateTopView{
+    if (self.postId) {
+        self.resumeHeadV.hidden = YES;
+        self.jobHeadV.hidden = NO;
+        self.jobHeadV.post = self.topModel.data.postMap;
+        
+        self.jobLab.hidden = NO;
+        self.jobLab.text = [NSString stringWithFormat:@"正在沟通的职位：%@",self.topModel.data.postMap.job_name];
+    }
+    
+    if (self.resumeId) {
+        self.jobHeadV.hidden = YES;
+        self.resumeHeadV.hidden = NO;
+        self.resumeHeadV.resume = self.topModel.data.resumeMap.resume;
+        
+        self.jobLab.hidden = YES;
+        self.jobLab.text = @"";
+    }
+    
+}
+#pragma mark - request
+-(void)requestTopData{
+    NSMutableDictionary *dataDic = [NSMutableDictionary dictionary];
+    [dataDic setValue:self.sendId forKey:@"otherUserId"];
+    if (self.resumeId) {
+        [dataDic setValue:self.resumeId forKey:@"resumeId"];
+    }
+    if (self.postId) {
+        [dataDic setValue:self.postId forKey:@"postId"];
+    }
+    
+    NSMutableDictionary *paramDic = [NSMutableDictionary dictionary];
+    [paramDic setValue:[dataDic mj_JSONString] forKey:@"data"];
+    [paramDic setValue:AppDelegateInstance.token forKey:@"token"];
+    
+    [[RHNetAPIManager sharedManager]appGetImPageInfoOPT:paramDic].start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+        if (data) {
+            self.topModel = [ChatTopModel mj_objectWithKeyValues:data];
+            [self updateTopView];
+        }
+    });
+}
+
+#pragma mark - action
+
+-(void)receiveMessage:(NSNotification *)notif{
+    NSLog(@"msg:%@",[notif.userInfo objectForKey:@"msg"]);
+    NSMutableArray *temp = [NSMutableArray arrayWithArray:self.dataSource];
+    [temp addObject:@10];
+    [self.tableV reloadData];
+}
+
+-(void)doEmojiBtn{
+    
+}
+-(void)doHistoryBtn{
+    ChatHistoryListViewController *vc = [ChatHistoryListViewController new];
+    [self.navigationController pushViewController:vc animated:YES];
+}
+-(void)doSendBtn{
+    [self sendText:self.messageTextV.text];
+}
+#pragma mark - tableview delegate
+-(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section{
+    return self.dataSource.count;
+}
+-(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
+    if (indexPath.row%2 == 0) {
+        CELL_DEFINE(ChatMineTableViewCell);
+        if (indexPath.row == 0) {
+            cell.contentLab.text = @"聊天啊，聊天啊，聊天啊，聊天啊，聊天啊\n聊天啊，聊天啊，聊天啊，聊天啊\n聊天啊，聊天啊，聊天啊，聊天啊\n聊天啊，聊天啊，聊天啊，\n聊天啊，聊天啊，聊天啊，";
+        }else{
+            cell.contentLab.text = @"聊天啊，聊天啊，";
+        }
+        
+        cell.headImgV.image = [UIImage imageNamed:@"个人中心头像"];
+        return cell;
+    }else{
+        CELL_DEFINE(ChatOtherTableViewCell);
+        if (indexPath.row == 3) {
+            cell.contentLab.text = @"ha\n聊天啊\n，聊天啊";
+        }else{
+            cell.contentLab.text = @"聊天啊，聊天啊，聊天啊，聊天啊，聊天啊";
+        }
+        
+        cell.headImgV.image = [UIImage imageNamed:@"附近职位logo"];
+        return cell;
+    }
+    
+}
+-(UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section{
+    return [UIView new];
+}
+-(UIView *)tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section{
+    return [UIView new];
+}
+-(CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section{
+    return CGFLOAT_MIN;
+}
+-(CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section{
+    return CGFLOAT_MIN;
+}
+
+#pragma textView delegate
+- (BOOL)textView:(UITextView *)textView shouldChangeTextInRange:(NSRange)range replacementText:(NSString *)text{
+    
+    if ([text isEqual:@"\n"]) {
+        if (![self.messageTextV.text isEqualToString:@""]) {
+            
+            [self sendText:self.messageTextV.text];
+            self.messageTextV.text = @"";
+            return NO;
+        }
+        return NO;
+    }
+    return  YES;
+}
+
+
+-(void)textViewDidChange:(UITextView *)textView{
+    if (textView.text.length == 0) {
+        [self.messageTextV mas_updateConstraints:^(MASConstraintMaker *make) {
+            make.height.mas_equalTo(Size(62/2));
+        }];
+    }else{
+        //内容高度
+        CGFloat contentSizeH = textView.contentSize.height;
+        //[self.messageTextV scrollRangeToVisible:NSMakeRange(self.messageTextV.text.length, 1)];
+        CGSize size = [textView.text ym_calculateSize:[UIFont systemFontOfSize:Size(13)] maxWidth:self.messageTextV.width lineSpacing:0];
+        //CGSize size = [textView sizeThatFits:CGSizeMake(textView.bounds.size.width, MAXFLOAT)];
+        [self.messageTextV mas_updateConstraints:^(MASConstraintMaker *make) {
+            if (size.height >= (self.messageTextV.font.lineHeight*5 + Size(10))) {
+                make.height.mas_equalTo(self.messageTextV.font.lineHeight*5 + Size(10));
+            }else if(size.height < Size(62/2)){
+                make.height.mas_equalTo(Size(62/2));
+            }else {
+                make.height.mas_equalTo(size.height + Size(10));
+            }
+            
+        }];
+        
+        [self.view layoutIfNeeded];
+        [textView scrollRangeToVisible:NSMakeRange(textView.selectedRange.location, 1)];
+    }
+    
+}
+
+
+/**
+ *  当键盘改变了frame(位置和尺寸)的时候调用
+ */
+-(void)keyboardWillChangeFrameNotify:(NSNotification*)notify {
+    
+    // 0.取出键盘动画的时间
+    CGFloat duration = [notify.userInfo[UIKeyboardAnimationDurationUserInfoKey] doubleValue];
+    // 1.取得键盘最后的frame
+    CGRect keyboardFrame = [notify.userInfo[UIKeyboardFrameEndUserInfoKey] CGRectValue];
+    // 2.计算控制器的view需要平移的距离
+    CGFloat transformY = keyboardFrame.origin.y - self.view.frame.size.height;
+    // 3.执行动画
+    [UIView animateWithDuration:duration animations:^{
+        if (transformY < 0) {
+            [self.bottomV mas_updateConstraints:^(MASConstraintMaker *make) {
+                make.bottom.mas_offset(-keyboardFrame.size.height);
+            }];
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(duration * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                [self scrollToEnd];
+            });
+            
+        }else{
+            [self.bottomV mas_updateConstraints:^(MASConstraintMaker *make) {
+                make.bottom.mas_offset(0);
+            }];
+        }
+//        [self.tableV mas_updateConstraints:^(MASConstraintMaker *make) {
+//            make.bottom.equalTo(self.bottomV.mas_top).mas_offset(0);
+//        }];
+        
+        
+    }];
+    
+}
+
+- (void)sendText:(NSString *)text {
+    //1. 构造文本消息体
+    ECTextMessageBody *messageBody = [[ECTextMessageBody alloc] initWithText:text];
+    //2. 构造出具体消息，设置消息接收者、对应的消息体
+    //发送单聊消息，接收者传对方的登录账号；发送群组消息，接收者传群组id
+    // !!!: 未完成 需要修改接收者
+    ECMessage *message = [[ECMessage alloc] initWithReceiver:self.sendId body:messageBody];
+    NSDate* date = [NSDate dateWithTimeIntervalSinceNow:0];
+    NSTimeInterval tmp =[date timeIntervalSince1970]*1000;
+    //3. 设置消息时间(发送消息是本地时间，接收消息是服务器时间)
+    message.timestamp = [NSString stringWithFormat:@"%lld", (long long)tmp];
+    //4. 消息发送
+    [[ECDevice sharedInstance].messageManager sendMessage:message progress:nil completion:^(ECError *error, ECMessage *amessage) {
+        if (error.errorCode == ECErrorType_NoError) {// 消息发送成功回调处理
+            NSLog(@"消息发送成功----%@",text);
+        }else{//其他错误处理
+            //发送失败
+            NSLog(@"消息发送失败");
+        }
+    }];
+}
+
+// 滑动到底部
+- (void)scrollToEnd {
+    if (self.dataSource.count>0) {
+        [self.tableV scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:self.dataSource.count-1 inSection:0] atScrollPosition:UITableViewScrollPositionNone animated:NO];
+    }
+}
+
+
+
+
+- (void)dealloc
+{
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+/*
+#pragma mark - Navigation
+
+// In a storyboard-based application, you will often want to do a little preparation before navigation
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
+    // Get the new view controller using [segue destinationViewController].
+    // Pass the selected object to the new view controller.
+}
+*/
+
+@end

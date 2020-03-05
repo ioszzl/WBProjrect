@@ -1,0 +1,23 @@
+//
+//  JobExperienceViewController.h
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/10.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "BaseViewController.h"
+
+NS_ASSUME_NONNULL_BEGIN
+
+/**
+ 工作经验
+ */
+@interface JobExperienceViewController : BaseViewController
+@property (nonatomic, copy) NSString *resumeId;
+@property (nonatomic, copy) NSString *jobId;
+
+@property (nonatomic, copy) void(^addResumeBlock)(NSString *resumeId);
+@end
+
+NS_ASSUME_NONNULL_END

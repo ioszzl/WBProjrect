@@ -1,0 +1,82 @@
+//
+//  ChatIndexListTableViewCell.m
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/6.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "ChatIndexListTableViewCell.h"
+
+@implementation ChatIndexListTableViewCell
+-(instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier{
+    self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
+    if (self) {
+        self.selectionStyle = UITableViewCellSelectionStyleNone;
+        [self initUI];
+    }
+    return self;
+}
+-(void)initUI{
+    
+    _headImgV = [UIImageView new];
+    _headImgV.layer.cornerRadius = Size(80/4);
+    _headImgV.clipsToBounds = YES;
+    //_headImgV.contentMode = UIViewContentModeScaleAspectFit;
+    [self.contentView addSubview:_headImgV];
+    [_headImgV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_offset(Size(15));
+        make.top.mas_offset(Size(34/2));
+        make.width.height.mas_equalTo(Size(80/2));
+    }];
+    
+    
+    _nameLab = [UILabel ym_labelWithFrame:CGRectZero font:FONT_SIZE_15 textColor:COLOR_RGB_51];
+    [self.contentView addSubview:_nameLab];
+    [_nameLab mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(_headImgV.mas_right).mas_offset(Size(12));
+        make.top.equalTo(_headImgV);
+        
+    }];
+    
+    
+    _contentLab = [UILabel ym_labelWithFrame:CGRectZero font:[UIFont systemFontOfSize:Size(13)] textColor:COLOR_RGB_51];
+    [self.contentView addSubview:_contentLab];
+    [_contentLab mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(_nameLab);
+        make.top.equalTo(_nameLab.mas_bottom).mas_offset(Size(11));
+        make.right.mas_offset(-Size(15));
+        make.bottom.mas_offset(Size(-13));
+    }];
+    
+    
+    _dateLab = [UILabel ym_labelWithFrame:CGRectZero font:[UIFont systemFontOfSize:Size(13)] textColor:COLOR_RGB_51 textAlignment:NSTextAlignmentRight];
+    [self.contentView addSubview:_dateLab];
+    [_dateLab mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.mas_offset(-Size(15));
+        make.top.mas_offset(Size(23));
+    }];
+    
+    
+}
+-(void)setList:(MessageList *)list{
+    _list = list;
+    
+    _headImgV.image = [UIImage imageNamed:@"个人中心头像"];
+    _nameLab.text = list.sendPname;//@"好未来";
+    _contentLab.text = list.content;//@"x聊天吗x聊天吗x聊天吗x聊天吗x聊天吗x聊天吗？x聊天吗x聊天吗x聊天吗x聊天吗";
+    _dateLab.text = [[NSDate dateWithTimeIntervalSince1970:list.createTime/1000] stringWithFormat:@"MM-dd HH:MM"];//@"7-17 10:20";
+}
+
+- (void)awakeFromNib {
+    [super awakeFromNib];
+    // Initialization code
+}
+
+- (void)setSelected:(BOOL)selected animated:(BOOL)animated {
+    [super setSelected:selected animated:animated];
+
+    // Configure the view for the selected state
+}
+
+@end

@@ -1,0 +1,168 @@
+//
+//  MainTabBarController.m
+//  TestDemo
+//
+//  Created by 孙若淮 on 14/03/2018.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "MainTabBarController.h"
+#import "BaseViewController.h"
+#import "BaseNavigationController.h"
+#import "HomeViewController.h"
+#import "MessageViewController.h"
+#import "FindIndexViewController.h"
+#import "MineIndexViewController.h"
+#import "BaseTabBar.h"
+
+#import "CompayHomeVC.h"
+#import "PublishPositionVC.h"
+#import "ResumeListVC.h"
+#import "CompanyCenterVC.h"
+
+
+@interface MainTabBarController ()
+@end
+
+@implementation MainTabBarController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    
+    
+    if (AppDelegateInstance.userType == 1) {//招聘
+        CompayHomeVC *vc1 = [CompayHomeVC new];
+        ResumeListVC *vc2 = [ResumeListVC new];
+        PublishPositionVC *vc3 = [PublishPositionVC new];
+        CompanyCenterVC *vc4 = [CompanyCenterVC new];
+        
+        
+        NSArray<BaseViewController*> *vcArray = @[vc1,vc2,vc3,vc4];
+        NSArray *tabBarArray = @[@"首页",@"简历",@"发布岗位",@"企业中心"];
+        NSArray *naviArray = @[@"",@"",@"",@""];
+        
+        NSArray *imageArray = @[@"01homepage",@"Resume01",@"Openpositions01",@"Businesscenter01"];
+        NSArray *selectedImageArray = @[@"02homepage",@"Resume02",@"Openpositions02",@"Businesscenter02"];
+        [self setUpChildVC:vcArray title:naviArray tabBar:tabBarArray image:imageArray selectedImage:selectedImageArray];
+    }else{
+        HomeViewController *vc1 = [HomeViewController new];
+        FindIndexViewController *vc3 = [FindIndexViewController new];
+        MessageViewController *vc2 = [MessageViewController new];
+        MineIndexViewController *vc4 = [MineIndexViewController new];
+        
+        
+        NSArray<BaseViewController*> *vcArray = @[vc1,vc2,vc3,vc4];
+        NSArray *tabBarArray = @[@"首页",@"消息",@"发现",@"我的"];
+        NSArray *naviArray = @[@"",@"",@"",@""];
+        
+        NSArray *imageArray = @[@"首页01",@"消息1",@"发现01",@"我的01"];
+        NSArray *selectedImageArray = @[@"首页02",@"消息2",@"发现02",@"我的02"];
+        [self setUpChildVC:vcArray title:naviArray tabBar:tabBarArray image:imageArray selectedImage:selectedImageArray];
+    }
+    
+    
+    
+    BaseTabBar *baseTabBar = [[BaseTabBar alloc] init];
+    [self setValue:baseTabBar forKey:@"tabBar"];
+}
+
+-(void)setHidesBottomBarWhenPushed:(BOOL)hidesBottomBarWhenPushed{
+    [super setHidesBottomBarWhenPushed:hidesBottomBarWhenPushed];
+    if (hidesBottomBarWhenPushed) {
+        
+    }else{
+        
+    }
+}
+
+- (void)viewDidAppear:(BOOL)animated{
+    [super viewDidAppear:animated];
+    if (AppDelegateInstance.userType == 0) {//求职
+        NSMutableDictionary *pageDic = [NSMutableDictionary dictionary];
+        [pageDic setValue:@"1" forKey:@"currPage"];
+        [pageDic setValue:@"10" forKey:@"pageSize"];
+        
+        NSMutableDictionary *paramDic = [NSMutableDictionary dictionary];
+        [paramDic setValue:[pageDic mj_JSONString] forKey:@"page"];
+        [paramDic setValue:AppDelegateInstance.token forKey:@"token"];
+        
+        [[RHNetAPIManager sharedManager]appSystemStationNewsOPT:paramDic].start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+            if (data) {
+                if ([data[@"data"][@"status"] intValue] == 1) {
+                    //self.tabBar.items[1].badgeValue = @"";
+                    int i=0;
+                    for (UIView *view in self.tabBar.subviews) {
+                        i++;
+                        //NSLog(@"%@",[view class]);
+                        if (i == 3) {
+                            if (![view viewWithTag:119]) {
+                                UIView *n = [UIView new];
+                                n.backgroundColor = [UIColor redColor];
+                                n.width = 6;
+                                n.height = 6;
+                                n.top = Size(10);
+                                n.right = view.width-Size(23);
+                                n.tag = 119;
+                                n.layer.cornerRadius = 3;
+                                n.clipsToBounds = YES;
+                                [view addSubview:n];
+                            }
+                            
+                        }
+                    }
+                    
+                }else{
+                    int i=0;
+                    for (UIView *view in self.tabBar.subviews) {
+                        i++;
+                        //NSLog(@"%@",[view class]);
+                        if (i == 3) {
+                            if ([view viewWithTag:119]) {
+                                
+                                [[view viewWithTag:119] removeFromSuperview];
+                            }
+                            
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+}
+
+#pragma mark - PrivateMethod 私有实现方法
+-(void)setUpChildVC:(NSArray<BaseViewController*>*)viewController title:(NSArray*)title tabBar:(NSArray*)tabBar image:(NSArray*)image selectedImage:(NSArray*)selectedImage{
+    for (int i = 0; i< viewController.count; i++) {
+        BaseViewController * vc = [viewController objectAtIndex:i];
+        vc.navigationItem.title = [title objectAtIndex:i];
+        vc.tabBarItem.title = [tabBar objectAtIndex:i];
+        [vc.tabBarItem setTitlePositionAdjustment:UIOffsetMake(0, - 4)];
+        
+        [vc.tabBarItem setTitleTextAttributes:[NSDictionary dictionaryWithObjectsAndKeys:RGBCOLOR(51, 51, 51),NSForegroundColorAttributeName, nil] forState:UIControlStateNormal];//默认字体颜色
+        UIColor *selectColor = AppDelegateInstance.userType == 1 ? RGBCOLOR(75, 179, 240) : RGBCOLOR(255, 187, 21);
+        [vc.tabBarItem setTitleTextAttributes:[NSDictionary dictionaryWithObjectsAndKeys:selectColor,NSForegroundColorAttributeName, nil] forState:UIControlStateSelected];//选中字体颜色
+        vc.tabBarItem.image = [[UIImage imageNamed:[image objectAtIndex:i]] imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal];
+        vc.tabBarItem.selectedImage = [[UIImage imageNamed:[selectedImage objectAtIndex:i]] imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal];
+        BaseNavigationController *navi = [[BaseNavigationController alloc]initWithRootViewController:vc];
+        [self addChildViewController:navi];
+    }
+}
+
+
+- (void)didReceiveMemoryWarning {
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+
+/*
+#pragma mark - Navigation
+
+// In a storyboard-based application, you will often want to do a little preparation before navigation
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
+    // Get the new view controller using [segue destinationViewController].
+    // Pass the selected object to the new view controller.
+}
+*/
+
+@end

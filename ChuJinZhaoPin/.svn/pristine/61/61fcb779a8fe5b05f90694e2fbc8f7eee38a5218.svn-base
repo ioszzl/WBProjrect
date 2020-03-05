@@ -1,0 +1,83 @@
+//
+//  PositionListModel.h
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/29.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "BaseModel.h"
+
+NS_ASSUME_NONNULL_BEGIN
+
+@interface PositionList :NSObject
+@property (nonatomic , assign) NSInteger              work_year;//工作经验(0,应届生 1.1-2年 2.3-5年 3.5-10年,410年以上)
+@property (nonatomic , assign) NSInteger              company_id;//公司id
+@property (nonatomic , copy) NSString              * phone;//账号
+@property (nonatomic , copy) NSString              * food_situation;//伙食情况
+@property (nonatomic , copy) NSString              * department;//部门
+@property (nonatomic , copy) NSString              * basic_pay;//基本工资
+@property (nonatomic , assign) NSInteger              education_level;//学历 (0,不限 1.大专 2.本科 3.研究生 4.博士)
+@property (nonatomic , assign) NSInteger              salary_range_id;//薪资范围id
+@property (nonatomic , assign) NSInteger              ID;//id
+@property (nonatomic , copy) NSString              * other_good;//其他福利
+@property (nonatomic , assign) NSInteger              industry_class_id;//行业类别id
+@property (nonatomic , copy) NSString              * job_duty;//岗位职责
+@property (nonatomic , copy) NSString              * company_name;//公司名称
+@property (nonatomic , assign) NSInteger              post_money;//职位押金
+@property (nonatomic , copy) NSString              * basic_good;//基本福利
+@property (nonatomic , copy) NSString              * pay_plan;//发薪安排
+@property (nonatomic , copy) NSString              * push_time;//发布时间戳
+@property (nonatomic , copy) NSString              * work_style;//工作方式
+@property (nonatomic , copy) NSString              * showRange;//"5K ~ 8K",//薪资显示范围
+@property (nonatomic , copy) NSString              * company_address;//公司地址
+@property (nonatomic , copy) NSString              * status;//"0",//发布状态(0.招聘中 1.未发布 2.已暂停)
+@property (nonatomic , copy) NSString              * position_name;//工作地点
+@property (nonatomic , copy) NSString              * des_card_ids;// "1,2",//描述卡id
+@property (nonatomic , copy) NSString              * bed_situation;//住宿情况
+@property (nonatomic , assign) NSInteger              work_address_region_id;//就职区域id
+@property (nonatomic , copy) NSString              * work_requirement;//任职要求
+@property (nonatomic , copy) NSString              * is_deleted;//"y",//是否删除(y:是 n:否)
+@property (nonatomic , copy) NSString              * social_good;//社保福利
+@property (nonatomic , copy) NSString              * job_name;//岗位名称
+@property (nonatomic , assign) NSInteger              create_time;//创建时间戳
+@property (nonatomic , copy) NSString              * total_pay;// "5000-10000元",//综合工资
+@property (nonatomic , assign) NSInteger              post_money_open;//是否开启职位押金(0:关闭,1:开启)'
+@property (nonatomic , copy) NSString              * work_time;//工作时间,
+@property (nonatomic , assign) NSInteger              cnt;//收藏数,
+@property (nonatomic , copy) NSString              * host_name;//": "183.60.229.149",
+@property (nonatomic , copy) NSString              * group_name;//": "group1",
+@property (nonatomic , copy) NSString              * fpath;//": "M00/00/0C/tzzllVvS3S-ANXiBAACwMcykk9A381.jpg",
+@property (nonatomic , copy) NSString              * imgUrl;// "http://183.60.229.149/group1/M00/00/0F/tzzllVvbuniAVLKQAAAcq0OQ13A017.png",//公司logo图片地址,
+@property (nonatomic , copy) NSString              * total_star;//"3.9",//星级
+@property (nonatomic, copy) NSString               * industry_class;//行业
+@end
+
+@interface PositionListData :NSObject
+@property (nonatomic , assign) NSInteger              pageSize;
+@property (nonatomic , assign) BOOL              hasNextPage;
+@property (nonatomic , assign) NSInteger              pages;
+@property (nonatomic , assign) NSInteger              pageNum;
+@property (nonatomic , assign) NSInteger              lastPage;
+@property (nonatomic , copy) NSArray<NSNumber *>              * navigatepageNums;
+@property (nonatomic , assign) BOOL              isLastPage;
+@property (nonatomic , assign) NSInteger              total;
+@property (nonatomic , copy) NSString              * orderBy;
+@property (nonatomic , assign) NSInteger              nextPage;
+@property (nonatomic , assign) NSInteger              size;
+@property (nonatomic , assign) BOOL              hasPreviousPage;
+@property (nonatomic , assign) NSInteger              navigatePages;
+@property (nonatomic , assign) NSInteger              startRow;
+@property (nonatomic , assign) NSInteger              prePage;
+@property (nonatomic , copy) NSArray<PositionList *>              * list;
+@property (nonatomic , assign) NSInteger              firstPage;
+@property (nonatomic , assign) BOOL              isFirstPage;
+@property (nonatomic , assign) NSInteger              endRow;
+
+@end
+
+@interface PositionListModel : BaseModel
+@property (nonatomic , strong) PositionListData              * data;
+@end
+
+NS_ASSUME_NONNULL_END

@@ -1,0 +1,409 @@
+//
+//  EditCompanyInfoViewController.m
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/12.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "EditCompanyInfoViewController.h"
+#import "MineInfoTableViewCell.h"
+#import "UploadImageTableViewCell.h"
+#import "CompanyIntroViewController.h"
+#import "YMAddressPickView.h"
+#import "CompanyDetailInfoModel.h"
+#import "CLAlertView.h"
+#import "ChoseTradeViewController.h"
+@interface EditCompanyInfoViewController ()<UITableViewDelegate,UITableViewDataSource,UITextFieldDelegate>
+@property (nonatomic, strong) UITableView *tableV;
+@property (nonatomic, strong) NSMutableArray *imgArr;
+@property (nonatomic, strong) UITextField *nameTF;
+@property (nonatomic, strong) UITextField *emailTF;
+@property (nonatomic, strong) UITextField *websitTF;
+@property (nonatomic, strong) UITextField *addressTF;
+
+@property (nonatomic, strong) CompanyDetailInfoModel *model;
+@property (nonatomic, strong) CompanyDetailInfoData *dataSourceM;
+
+@property (nonatomic, strong) NSMutableArray *companyLogoImgArr;
+@end
+
+@implementation EditCompanyInfoViewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    [self initUI];
+    
+    [self requestInfoData];
+}
+-(void)initUI{
+    self.title = @"公司信息";
+
+    
+    _tableV = [[UITableView alloc]initWithFrame:CGRectZero style:UITableViewStyleGrouped];
+    
+    _tableV.separatorStyle = UITableViewCellSeparatorStyleNone;
+    _tableV.showsVerticalScrollIndicator = NO;
+    _tableV.showsHorizontalScrollIndicator = NO;
+    _tableV.backgroundColor = COLOR_BG;
+    _tableV.dataSource = self;
+    _tableV.delegate = self;
+    [self.view addSubview:_tableV];
+    [_tableV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.edges.equalTo(self.view);
+    }];
+}
+#pragma mark - request
+-(void)requestInfoData{
+    
+    NSMutableDictionary *paramDic = [NSMutableDictionary dictionary];
+    [paramDic setValue:AppDelegateInstance.token forKey:@"token"];
+    
+    [[RHNetAPIManager sharedManager]appToCompanyInfoDetailOPT:paramDic].start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+        if (data) {
+            self.model = [CompanyDetailInfoModel mj_objectWithKeyValues:data];
+            self.dataSourceM = self.model.data;
+            if (self.dataSourceM.logoUrl.length != 0) {
+                NSDictionary *dic = @{@"imgId":NSStringFromInteger(self.dataSourceM.logo),
+                                      @"imgUrl":self.dataSourceM.logoUrl
+                                      };
+                [self.companyLogoImgArr addObject:dic];
+            }
+            
+            [self.tableV reloadData];
+        }
+    });
+}
+#pragma mark - action
+-(void)doNextBtn{
+    if (self.companyLogoImgArr.count == 0) {
+        [HUD showHUDError:nil title:@"请上传logo"];
+        return;
+    }
+    NSMutableDictionary *dataDic = [NSMutableDictionary dictionary];
+    [dataDic setValue:NSStringFromInteger(self.model.data.ID) forKey:@"id"];
+    NSDictionary *dic = self.companyLogoImgArr[0];
+    [dataDic setValue:dic[@"imgId"] forKey:@"logo"];
+    [dataDic setValue:self.nameTF.text forKey:@"companyName"];
+    [dataDic setValue:self.dataSourceM.scale forKey:@"scale"];
+    [dataDic setValue:NSStringFromInteger(self.dataSourceM.company_type) forKey:@"companyType"];
+    [dataDic setValue:self.emailTF.text forKey:@"companyEmail"];
+    [dataDic setValue:NSStringFromInteger(self.dataSourceM.describ_id) forKey:@"industryClassId"];
+    [dataDic setValue:self.websitTF.text forKey:@"companyHostUrl"];
+    [dataDic setValue:NSStringFromInteger(self.dataSourceM.company_area_id) forKey:@"companyArea"];
+    [dataDic setValue:self.addressTF.text forKey:@"companyAddress"];
+    
+    NSMutableDictionary *paramDic = [NSMutableDictionary dictionary];
+    [paramDic setValue:[dataDic mj_JSONString] forKey:@"data"];
+    [paramDic setValue:AppDelegateInstance.token forKey:@"token"];
+    
+    [[RHNetAPIManager sharedManager]appSaveInfoCenterCompanyOPT:paramDic].start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+        if (data) {
+            [HUD showHUDError:nil title:@"已保存"];
+            CompanyIntroViewController *vc = [CompanyIntroViewController new];
+            vc.model = self.model;
+            [self.navigationController pushViewController:vc animated:YES];
+        }
+    });
+    
+    
+}
+
+#pragma mark - tableview delegate
+-(NSInteger)numberOfSectionsInTableView:(UITableView *)tableView{
+    return 3;
+}
+-(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section{
+    if (section == 0) {
+        return 4;
+    }else if (section == 1){
+        return 4;
+    }
+    return 1;
+}
+-(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
+    if (indexPath.section == 0) {
+        CELL_DEFINE(MineInfoTableViewCell);
+        cell.arrowImgV.hidden = YES;
+        [cell.textF mas_remakeConstraints:^(MASConstraintMaker *make) {
+            make.right.mas_offset(-Size(15));
+            make.centerY.equalTo(cell.contentView);
+            make.left.equalTo(cell.titleLab.mas_right);
+        }];
+        cell.textF.placeholder = @"请填写";
+        switch (indexPath.row) {
+            case 0:{
+                
+                cell.titleLab.text = @"公司名称";
+                cell.textF.text = self.dataSourceM.company_name;
+                self.nameTF = cell.textF;
+                self.nameTF.delegate = self;
+                return cell;
+            }
+                break;
+            case 1:{
+                cell.arrowImgV.hidden = NO;
+                [cell.textF mas_remakeConstraints:^(MASConstraintMaker *make) {
+                    make.right.equalTo(cell.arrowImgV.mas_left).mas_offset(Size(-15));
+                    make.centerY.equalTo(cell.contentView);
+                    make.left.equalTo(cell.titleLab.mas_right);
+                }];
+                cell.textF.placeholder = @"请选择";
+                cell.textF.enabled = NO;
+                cell.titleLab.text = @"公司规模";
+                cell.textF.text = self.dataSourceM.scale_str;
+                return cell;
+            }
+                break;
+            case 2:{
+                cell.arrowImgV.hidden = NO;
+                [cell.textF mas_remakeConstraints:^(MASConstraintMaker *make) {
+                    make.right.equalTo(cell.arrowImgV.mas_left).mas_offset(Size(-15));
+                    make.centerY.equalTo(cell.contentView);
+                    make.left.equalTo(cell.titleLab.mas_right);
+                }];
+                cell.textF.placeholder = @"请选择";
+                cell.textF.enabled = NO;
+                cell.titleLab.text = @"公司类型";
+                cell.textF.text = self.dataSourceM.company_type_str;
+                return cell;
+            }
+                break;
+            case 3:{
+                cell.titleLab.text = @"公司邮箱";
+                cell.textF.text = self.dataSourceM.company_email;
+                self.emailTF = cell.textF;
+                self.emailTF.delegate = self;
+                
+                return cell;
+            }
+                break;
+            default:
+                break;
+        }
+        
+    }
+    if (indexPath.section == 1) {
+        CELL_DEFINE(MineInfoTableViewCell);
+        cell.arrowImgV.hidden = YES;
+        [cell.textF mas_remakeConstraints:^(MASConstraintMaker *make) {
+            make.right.mas_offset(-Size(15));
+            make.centerY.equalTo(cell.contentView);
+            make.left.equalTo(cell.titleLab.mas_right);
+        }];
+        cell.textF.placeholder = @"请填写";
+        switch (indexPath.row) {
+            case 0:{
+                cell.arrowImgV.hidden = NO;
+                [cell.textF mas_remakeConstraints:^(MASConstraintMaker *make) {
+                    make.right.equalTo(cell.arrowImgV.mas_left).mas_offset(Size(-15));
+                    make.centerY.equalTo(cell.contentView);
+                    make.left.equalTo(cell.titleLab.mas_right);
+                }];
+                cell.textF.placeholder = @"请选择";
+                cell.textF.enabled = NO;
+                cell.titleLab.text = @"行业类别";
+                cell.textF.text = self.dataSourceM.describ;
+                return cell;
+            }
+                break;
+            case 1:{
+                cell.titleLab.text = @"公司官网";
+                cell.textF.text = self.dataSourceM.company_host_url;
+                self.websitTF = cell.textF;
+                self.websitTF.delegate = self;
+                return cell;
+            }
+                break;
+            case 2:{
+                cell.arrowImgV.hidden = NO;
+                [cell.textF mas_remakeConstraints:^(MASConstraintMaker *make) {
+                    make.right.equalTo(cell.arrowImgV.mas_left).mas_offset(Size(-15));
+                    make.centerY.equalTo(cell.contentView);
+                    make.left.equalTo(cell.titleLab.mas_right);
+                }];
+                cell.textF.placeholder = @"请选择";
+                cell.textF.enabled = NO;
+                cell.titleLab.text = @"公司区域";
+                cell.textF.text = self.dataSourceM.position_name;
+                
+                return cell;
+            }
+                break;
+            case 3:{
+                cell.titleLab.text = @"公司地址";
+                cell.textF.text = self.dataSourceM.company_address;
+                self.addressTF = cell.textF;
+                self.addressTF.delegate = self;
+                return cell;
+            }
+                break;
+            default:
+                break;
+        }
+    }
+    if (indexPath.section == 2){
+        CELL_DEFINE(UploadImageTableViewCell);
+        WeakSelf(cell);
+        cell.imgUrlMuarr = self.companyLogoImgArr;
+        cell.imgBtnBlock = ^(NSMutableArray *imgArr) {
+            [self.companyLogoImgArr addObjectsFromArray:imgArr];
+            weakcell.imgUrlMuarr = self.companyLogoImgArr;
+        };
+        return cell;
+    }
+    
+    CELL_DEFINE(UITableViewCell);
+    return cell;
+}
+-(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath{
+    if (indexPath.section == 2) {
+        UploadImageTableViewCell *cell = (UploadImageTableViewCell *)[self tableView:tableView cellForRowAtIndexPath:indexPath];
+        
+        return cell.cellH;
+    }
+    return Size(120/2);
+}
+-(UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section{
+    if (section == 2) {
+        UIView *view = [[UIView alloc] initWithFrame:CGRectMake(0, 0, kScreenWidth, Size(65/2))];
+        view.backgroundColor = RGBCOLOR(255, 255, 255);
+        
+        UILabel *lab = [UILabel ym_labelWithFrame:CGRectZero font:FONT_SIZE_12 textColor:COLOR_RGB_51];
+        NSMutableAttributedString *attr = [[NSMutableAttributedString alloc]initWithString:@"*公司LOGO" attributes:@{NSForegroundColorAttributeName:COLOR_RGB_51}];
+        [attr addAttribute:NSForegroundColorAttributeName value:COLOR_MAIN_ENTERPRISE range:NSMakeRange(0, 1)];
+        lab.attributedText = attr;
+        [view addSubview:lab];
+        [lab mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.left.mas_offset(Size(15));
+            make.top.mas_offset(Size(20));
+        }];
+        
+        return view;
+    }
+    return [UIView new];
+}
+-(CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section{
+    if (section == 2) {
+        return Size(65/2);
+    }
+    return CGFLOAT_MIN;
+}
+-(UIView *)tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section{
+    if (section == 2) {
+        UIView *view = [[UIView alloc]initWithFrame:CGRectMake(0, 0, kScreenWidth, Size(198/2+20))];
+        UIButton *nextBtn = [UIButton ym_ButtonWithFrame:CGRectZero title:@"下一步" backgroundColor:COLOR_MAIN_ENTERPRISE titleColor:RGBCOLOR(255, 255, 255) titleSize:Size(17)];
+        nextBtn.layer.cornerRadius = Size(5);
+        [view addSubview:nextBtn];
+        [nextBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.left.mas_offset(Size(15));
+            make.width.mas_equalTo(kScreenWidth-Size(30));
+            make.top.mas_offset(Size(50));
+            make.height.mas_equalTo(Size(98/2));
+        }];
+        [nextBtn addTarget:self action:@selector(doNextBtn) forControlEvents:UIControlEventTouchUpInside];
+        
+        return view;
+    }
+    return [UIView new];
+}
+-(CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section{
+    if (section == 2) {
+        return Size(198/2+20);
+    }
+    return Size(10);
+}
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath{
+    [self.view endEditing:YES];
+    MineInfoTableViewCell *cell = [tableView cellForRowAtIndexPath:indexPath];
+    if ([cell.titleLab.text isEqualToString:@"公司规模"]) {
+        CLAlertView *alert = [CLAlertView globeBottomView];
+        alert.title = @"公司规模";
+        NSMutableArray *temp = [NSMutableArray array];
+        for (Scale *s in AppDelegateInstance.gloableModel.data.scale) {
+            [temp addObject:s.value];
+        }
+        alert.titleArray = temp;
+        alert.globeBottomView = ^(NSInteger index, NSString *string) {
+            self.dataSourceM.scale = NSStringFromInteger(AppDelegateInstance.gloableModel.data.scale[index].ID);
+            self.dataSourceM.scale_str = string;
+            [self.tableV reloadData];
+        };
+        [alert show];
+    }
+    if ([cell.titleLab.text isEqualToString:@"公司类型"]) {
+        CLAlertView *alert = [CLAlertView globeBottomView];
+        alert.title = @"公司类型";
+        NSMutableArray *temp = [NSMutableArray array];
+        for (Scale *s in AppDelegateInstance.gloableModel.data.companyType) {
+            [temp addObject:s.value];
+        }
+        alert.titleArray = temp;
+        alert.globeBottomView = ^(NSInteger index, NSString *string) {
+            self.dataSourceM.company_type = AppDelegateInstance.gloableModel.data.companyType[index].ID;
+            self.dataSourceM.company_type_str = string;
+            [self.tableV reloadData];
+        };
+        [alert show];
+    }
+    if ([cell.titleLab.text isEqualToString:@"行业类别"]) {
+        ChoseTradeViewController *vc = [ChoseTradeViewController new];
+        vc.multipleCount = 1;
+        vc.tradeSelectedBlock = ^(NSDictionary * _Nonnull tradeDic) {
+            NSArray *temp = tradeDic[@"tradeArr"];
+            Children *c = temp[0];
+            self.dataSourceM.describ_id = c.value;
+            self.dataSourceM.describ = c.label;
+            [self.tableV reloadData];
+        };
+        [self.navigationController pushViewController:vc animated:YES];
+    }
+    if ([cell.titleLab.text isEqualToString:@"公司区域"]) {
+        YMAddressPickView *picker = [[YMAddressPickView alloc]initWithUI:0 y:kScreenHeight width:kScreenWidth height:kScreenHeight];
+        picker.AdressBlock = ^(NSString *province, NSString *city, NSString *town, NSString *pid, NSString *cid, NSString *tid) {
+            self.dataSourceM.company_area_id = tid.integerValue;
+            self.dataSourceM.position_name = town;
+            [self.tableV reloadData];
+//            NSLog(@"%@-%@-%@",province,city,town);
+//            NSLog(@"%@-%@-%@",pid,cid,tid);
+        };
+        [picker showBottomView];
+    }
+    
+}
+
+#pragma mark - textField delegate
+-(void)textFieldDidEndEditing:(UITextField *)textField{
+    if (textField == self.nameTF) {
+        self.dataSourceM.company_name = textField.text;
+    }
+    if (textField == self.emailTF) {
+        self.dataSourceM.company_email = textField.text;
+    }
+    if (textField == self.websitTF) {
+        self.dataSourceM.company_host_url = textField.text;
+    }
+    if (textField == self.addressTF) {
+        self.dataSourceM.company_address = textField.text;
+    }
+}
+
+-(NSMutableArray *)companyLogoImgArr{
+    if (!_companyLogoImgArr) {
+        _companyLogoImgArr = [NSMutableArray array];
+    }
+    return _companyLogoImgArr;
+}
+/*
+#pragma mark - Navigation
+
+// In a storyboard-based application, you will often want to do a little preparation before navigation
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
+    // Get the new view controller using [segue destinationViewController].
+    // Pass the selected object to the new view controller.
+}
+*/
+
+@end

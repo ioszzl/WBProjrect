@@ -1,0 +1,20 @@
+//
+//  ResumeDetailViewController.h
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/12.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "BaseViewController.h"
+
+NS_ASSUME_NONNULL_BEGIN
+
+/**
+ 简历详情
+ */
+@interface ResumeDetailViewController : BaseViewController
+@property (nonatomic, copy) NSString *resumeId;
+@end
+
+NS_ASSUME_NONNULL_END

@@ -1,0 +1,20 @@
+//
+//  PositionDetailViewController.h
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/14.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "BaseViewController.h"
+
+NS_ASSUME_NONNULL_BEGIN
+
+/**
+ 岗位详情
+ */
+@interface PositionDetailViewController : BaseViewController
+@property (nonatomic, copy) NSString *postId;//职位id
+@end
+
+NS_ASSUME_NONNULL_END

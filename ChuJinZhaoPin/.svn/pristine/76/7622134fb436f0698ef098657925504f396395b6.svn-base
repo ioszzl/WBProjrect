@@ -1,0 +1,134 @@
+//
+//  ChatResumeHeadView.m
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/12/8.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "ChatResumeHeadView.h"
+
+@implementation ChatResumeHeadView
+- (instancetype)init
+{
+    self = [super init];
+    if (self) {
+        [self initUI];
+    }
+    return self;
+}
+- (instancetype)initWithFrame:(CGRect)frame
+{
+    self = [super initWithFrame:frame];
+    if (self) {
+        [self initUI];
+    }
+    return self;
+}
+
+-(void)initUI{
+    self.backgroundColor = RGBCOLOR(255, 255, 255);
+    
+    
+    _headImgV = [UIImageView new];
+    _headImgV.contentMode = UIViewContentModeScaleAspectFit;
+    [self addSubview:_headImgV];
+    [_headImgV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.mas_offset(Size(15));
+        make.left.mas_offset(Size(15));
+        make.width.mas_equalTo(Size(74/2));
+        make.height.mas_equalTo(Size(74/2));
+    }];
+    
+    _nameLab = [UILabel ym_labelWithFrame:CGRectZero font:[UIFont systemFontOfSize:Size(14)] textColor:COLOR_RGB_51];
+    [self addSubview:_nameLab];
+    [_nameLab mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(_headImgV.mas_right).mas_offset(Size(14));
+        make.centerY.equalTo(_headImgV);
+    }];
+    
+    
+    _positionLab = [UILabel ym_labelWithFrame:CGRectZero font:[UIFont systemFontOfSize:Size(14)] textColor:COLOR_RGB_51];
+    [self addSubview:_positionLab];
+    [_positionLab mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.mas_offset(-Size(10));
+        make.centerY.equalTo(_nameLab);
+        make.left.mas_greaterThanOrEqualTo(_nameLab.mas_right);
+    }];
+    
+    
+    NSArray *arr = @[@"",@"",@""];
+    UILabel *tempLab;
+    for (int i=0; i<arr.count; i++) {
+        UILabel *lab = [UILabel ym_labelWithFrame:CGRectZero font:[UIFont systemFontOfSize:Size(10)] textColor:COLOR_RGB_153];
+        lab.backgroundColor = RGBCOLOR(249, 250, 253);
+        lab.layer.cornerRadius = Size(5);
+        lab.textAlignment = NSTextAlignmentCenter;
+        lab.text = arr[i];
+        [self addSubview:lab];
+        //CGFloat w = [arr[i] ym_getStringWidthfont:[UIFont systemFontOfSize:Size(10)]];
+        [lab mas_makeConstraints:^(MASConstraintMaker *make) {
+            if (!tempLab) {
+                make.left.mas_offset(Size(14));
+                make.top.equalTo(_headImgV.mas_bottom).mas_offset(Size(12));
+            }else{
+                make.left.equalTo(tempLab.mas_right).mas_offset(Size(7));
+                make.top.equalTo(tempLab);
+            }
+            make.height.mas_equalTo(Size(35/2));
+            //make.width.mas_equalTo(w+Size(10));
+        }];
+        
+        tempLab = lab;
+        [self.tagLabArr addObject:lab];
+    }
+    
+    _introLab = [UILabel ym_labelWithFrame:CGRectZero font:[UIFont systemFontOfSize:Size(12)] textColor:COLOR_RGB_102];
+    [self addSubview:_introLab];
+    [_introLab mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_offset(Size(15));
+        make.top.equalTo(tempLab.mas_bottom).mas_offset(Size(10));
+        make.right.mas_offset(-Size(15));
+    }];
+    
+    
+}
+
+-(void)setResume:(ResumeDetailResume *)resume{
+    _resume = resume;
+    
+    [_headImgV sd_setImageWithURL:[NSURL URLWithString:resume.tCjUserLoginDto.headPic] placeholderImage:[UIImage imageNamed:@"头像"]];
+    _nameLab.text = resume.tCjUserLoginDto.tCjUserInfoDto.realName;
+    _positionLab.text = resume.workJob;
+    
+    _introLab.text = [NSString stringWithFormat:@"%@  %@  %@",resume.positionLocationdes,resume.wantJobStatus == 0 ? @"正在找工作" : @"已入职",resume.workClassName];
+    
+    self.tagLabArr[0].text = resume.tCjUserLoginDto.tCjUserInfoDto.sex.integerValue == 0 ? @"男" : @"女";
+    [self.tagLabArr[0] mas_updateConstraints:^(MASConstraintMaker *make) {
+        make.width.mas_equalTo([self.tagLabArr[0].text ym_getStringWidthfont:[UIFont systemFontOfSize:Size(10)]] + Size(10));
+    }];
+    self.tagLabArr[1].text = NSStringFromInteger(resume.tCjUserLoginDto.tCjUserInfoDto.age);
+    [self.tagLabArr[1] mas_updateConstraints:^(MASConstraintMaker *make) {
+        make.width.mas_equalTo([self.tagLabArr[1].text ym_getStringWidthfont:[UIFont systemFontOfSize:Size(10)]] + Size(10));
+    }];
+    self.tagLabArr[2].text = resume.tCjUserLoginDto.tCjUserInfoDto.maxEduLevelStr;
+    [self.tagLabArr[2] mas_updateConstraints:^(MASConstraintMaker *make) {
+        make.width.mas_equalTo([self.tagLabArr[2].text ym_getStringWidthfont:[UIFont systemFontOfSize:Size(10)]] + Size(10)).priorityHigh();
+        make.right.mas_lessThanOrEqualTo(-Size(135/2));
+    }];
+}
+-(NSMutableArray<UILabel *> *)tagLabArr{
+    if (!_tagLabArr) {
+        _tagLabArr = [NSMutableArray array];
+    }
+    return _tagLabArr;
+}
+/*
+// Only override drawRect: if you perform custom drawing.
+// An empty implementation adversely affects performance during animation.
+- (void)drawRect:(CGRect)rect {
+    // Drawing code
+}
+*/
+
+@end

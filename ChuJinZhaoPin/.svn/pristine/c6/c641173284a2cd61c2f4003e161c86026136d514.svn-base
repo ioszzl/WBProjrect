@@ -1,0 +1,412 @@
+//
+//  ComapnyVerifyViewController.m
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/12.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "ComapnyVerifyViewController.h"
+#import "MineInfoTableViewCell.h"
+#import "UploadImageTableViewCell.h"
+#import "MainTabBarController.h"
+#import "BaseNavigationController.h"
+#import "CompanyVerifyModel.h"
+@interface ComapnyVerifyViewController ()<UITableViewDelegate,UITableViewDataSource,UITextFieldDelegate>
+@property (nonatomic, strong) UITableView *tableV;
+@property (nonatomic, strong) NSMutableArray *imgArr;
+
+@property (nonatomic, strong) UITextField *nameTF;
+@property (nonatomic, strong) UITextField *codeTF;
+@property (nonatomic, strong) UITextField *accountTF;
+@property (nonatomic, strong) UITextField *bankTF;
+
+@property (nonatomic, strong) CompanyVerifyModel *model;
+@property (nonatomic, strong) CompanyVerifyData *dataSourceM;
+
+@property (nonatomic, strong) NSMutableArray *businessLicenseImgArr;
+@property (nonatomic, strong) NSMutableArray *idCardZmImgArr;
+@property (nonatomic, strong) NSMutableArray *idCardFmImgArr;
+@end
+
+@implementation ComapnyVerifyViewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    [self initUI];
+    
+    [self requestInitUI];
+}
+-(void)initUI{
+    self.title = @"企业认证";
+    
+    UILabel * tipLab = [UILabel ym_labelWithFrame:CGRectZero font:[UIFont systemFontOfSize:Size((13))] textColor:COLOR_MAIN_ENTERPRISE];
+    tipLab.text = @"企业尚未认证，认证之后才能发布职位哦";
+    [self.view addSubview:tipLab];
+    [tipLab mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.centerX.equalTo(self.view);
+        make.top.mas_offset(Size(12));
+    }];
+    
+  
+    _tableV = [[UITableView alloc]initWithFrame:CGRectZero style:UITableViewStyleGrouped];
+    _tableV.separatorStyle = UITableViewCellSeparatorStyleNone;
+    //_tableV.bounces = NO;
+    _tableV.showsVerticalScrollIndicator = NO;
+    _tableV.showsHorizontalScrollIndicator = NO;
+    _tableV.backgroundColor = COLOR_BG;
+    _tableV.dataSource = self;
+    _tableV.delegate = self;
+    [self.view addSubview:_tableV];
+    [_tableV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(tipLab.mas_bottom).mas_offset(Size(12));
+        make.left.right.bottom.mas_offset(0);
+    }];
+    
+}
+
+#pragma mark - request
+-(void)requestInitUI{
+    
+    NSMutableDictionary *paramDic = [NSMutableDictionary dictionary];
+    [paramDic setValue:AppDelegateInstance.token forKey:@"token"];
+    
+    [[RHNetAPIManager sharedManager]appGetCompanyAuthInfoOPT:paramDic].start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+        if (data) {
+            self.model = [CompanyVerifyModel mj_objectWithKeyValues:data];
+            self.dataSourceM = self.model.data;
+            for (CompanyVerifyImgList *l in self.dataSourceM.businessLicenseImgList) {
+                NSDictionary *dic = @{@"imgUrl":l.imgUrl,@"imgId":NSStringFromInteger(l.imgId)};
+                [self.businessLicenseImgArr addObject:dic];
+            }
+            //[self.businessLicenseImgArr addObject:@{@"imgId":@"1240",@"imgUrl":@"http://183.60.229.149/group1/M00/00/14/tzzllVv9H3GAJenlAAy1sCf7uwA054.jpg"}];
+            for (CompanyVerifyImgList *l in self.dataSourceM.idCardZmImg) {
+                NSDictionary *dic = @{@"imgUrl":l.imgUrl,@"imgId":NSStringFromInteger(l.imgId)};
+                [self.idCardZmImgArr addObject:dic];
+            }
+            //[self.idCardZmImgArr addObject:@{@"imgId":@"1238",@"imgUrl":@"http://183.60.229.149/group1/M00/00/14/tzzllVv9MRaAJ2l-AAqMMMYUll4353.jpg"}];
+            for (CompanyVerifyImgList *l in self.dataSourceM.idCardFmImg) {
+                NSDictionary *dic = @{@"imgUrl":l.imgUrl,@"imgId":NSStringFromInteger(l.imgId)};
+                [self.idCardFmImgArr addObject:dic];
+            }
+            //[self.idCardFmImgArr addObject:@{@"imgId":@"1239",@"imgUrl":@"http://183.60.229.149/group1/M00/00/14/tzzllVv9MRaAJ2l-AAqMMMYUll4353.jpg"}];
+            
+            [self.tableV reloadData];
+        }
+    });
+}
+
+
+#pragma mark - action
+-(void)doNextBtn{
+//    AppDelegateInstance.userModel.loginCode = 1;
+//    DefaultsSetObject([AppDelegateInstance.userModel mj_JSONString], KEY_USER_DATA);
+//    if ([AppDelegateInstance.window.rootViewController isKindOfClass:[MainTabBarController class]]) {
+//        [self dismissViewControllerAnimated:NO completion:^{
+//            MainTabBarController *vc = [MainTabBarController new];
+//            AppDelegateInstance.window.rootViewController = vc;
+//        }];
+//    }else{
+//        
+//        MainTabBarController *vc = [MainTabBarController new];
+//        AppDelegateInstance.window.rootViewController = vc;
+//    }
+//    return;
+    
+    if (self.nameTF.text.length == 0) {
+        [HUD showHUDError:nil title:@"请填写企业名称"];
+        return;
+    }
+    if (self.codeTF.text.length == 0) {
+        [HUD showHUDError:nil title:@"请填写信用代码"];
+        return;
+    }
+    if (self.businessLicenseImgArr.count == 0) {
+        [HUD showHUDError:nil title:@"请上传营业执照"];
+        return;
+    }
+    if (self.idCardZmImgArr.count == 0 || self.idCardFmImgArr.count == 0) {
+        [HUD showHUDError:nil title:@"请上传身份证"];
+        return;
+    }
+   
+    NSMutableDictionary *dataDic = [NSMutableDictionary dictionary];
+    [dataDic setValue:NSStringFromInteger(self.model.data.companyInfo.ID) forKey:@"id"];
+    [dataDic setObject:self.nameTF.text forKey:@"companyName"];
+    [dataDic setValue:self.codeTF.text forKey:@"socialUnifiedCreditCode"];
+    [dataDic setValue:self.accountTF.text forKey:@"businessToPublicAccount"];
+    [dataDic setValue:self.bankTF.text forKey:@"accountOpeningBank"];
+    NSMutableArray *temp = [NSMutableArray array];
+    for (NSDictionary *l in self.businessLicenseImgArr) {
+        [temp addObject:[l objectForKey:@"imgId"]];
+    }
+    [dataDic setValue:[temp componentsJoinedByString:@","] forKey:@"businessLicenseImgIds"];
+    [dataDic setValue:[temp componentsJoinedByString:@","] forKey:@"businessLicense"];
+    
+    [dataDic setValue:[self.idCardZmImgArr.firstObject objectForKey:@"imgId"] forKey:@"idCardZmId"];
+    [dataDic setValue:[self.idCardFmImgArr.firstObject objectForKey:@"imgId"] forKey:@"idCardFmId"];
+    
+    NSMutableDictionary *paramDic = [NSMutableDictionary dictionary];
+    [paramDic setValue:[dataDic mj_JSONString] forKey:@"data"];
+    [paramDic setValue:AppDelegateInstance.token forKey:@"token"];
+    
+    [[RHNetAPIManager sharedManager]appCompanyAuthOPT:paramDic].start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+        if (data) {
+            
+            AppDelegateInstance.userModel.loginCode = 1;
+            DefaultsSetObject([AppDelegateInstance.userModel mj_JSONString], KEY_USER_DATA);
+            if ([AppDelegateInstance.window.rootViewController isKindOfClass:[MainTabBarController class]]) {
+                [self dismissViewControllerAnimated:NO completion:^{
+                    MainTabBarController *vc = [MainTabBarController new];
+                    AppDelegateInstance.window.rootViewController = vc;
+                }];
+            }else{
+                
+                MainTabBarController *vc = [MainTabBarController new];
+                AppDelegateInstance.window.rootViewController = vc;
+            }
+            
+            
+        }
+    });
+    
+//    MainTabBarController *mainVC = (MainTabBarController *)AppDelegateInstance.window.rootViewController;
+//    BaseNavigationController *currentNav = mainVC.viewControllers[mainVC.selectedIndex];
+//
+//    UIViewController *currentVC = currentNav.topViewController;
+//    [currentVC dismissViewControllerAnimated:NO completion:nil];
+//    [currentNav dismissViewControllerAnimated:NO completion:nil];
+//    [mainVC dismissViewControllerAnimated:NO completion:nil];
+//
+//    currentVC = nil;
+//    currentNav = nil;
+//    mainVC = nil;
+//    MainTabBarController *vc = [MainTabBarController new];
+//    AppDelegateInstance.window.rootViewController = vc;
+
+   // [[NSNotificationCenter defaultCenter]postNotificationName:@"dismissVC" object:nil];
+}
+
+#pragma mark - tableview delegate
+-(NSInteger)numberOfSectionsInTableView:(UITableView *)tableView{
+    return 4;
+}
+-(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section{
+    if (section == 0) {
+        return 4;
+    }
+    return 1;
+}
+-(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
+    if (indexPath.section == 0) {
+        CELL_DEFINE(MineInfoTableViewCell);
+        cell.arrowImgV.hidden = YES;
+        [cell.textF mas_remakeConstraints:^(MASConstraintMaker *make) {
+            make.right.mas_offset(-Size(15));
+            make.centerY.equalTo(cell.contentView);
+        }];
+        
+        switch (indexPath.row) {
+            case 0:{
+                NSMutableAttributedString *attr = [[NSMutableAttributedString alloc]initWithString:@"*企业名称" attributes:@{NSForegroundColorAttributeName:COLOR_RGB_51}];
+                [attr addAttribute:NSForegroundColorAttributeName value:COLOR_MAIN_ENTERPRISE range:NSMakeRange(0, 1)];
+                cell.titleLab.attributedText = attr;
+                cell.textF.placeholder = @"请输入企业名称";
+                cell.textF.text = self.dataSourceM.companyInfo.companyName;
+                self.nameTF = cell.textF;
+                self.nameTF.delegate = self;
+                return cell;
+            }
+                break;
+            case 1:{
+                NSMutableAttributedString *attr = [[NSMutableAttributedString alloc]initWithString:@"*社会统一信用代码" attributes:@{NSForegroundColorAttributeName:COLOR_RGB_51}];
+                [attr addAttribute:NSForegroundColorAttributeName value:COLOR_MAIN_ENTERPRISE range:NSMakeRange(0, 1)];
+                cell.titleLab.attributedText = attr;
+                cell.textF.placeholder = @"请输入信用代码";
+                cell.textF.text = self.dataSourceM.companyInfo.socialUnifiedCreditCode;
+                self.codeTF = cell.textF;
+                self.codeTF.delegate = self;
+                return cell;
+            }
+                break;
+            case 2:{
+                
+                cell.titleLab.text = @"企业对公账号";
+                cell.textF.placeholder = @"请输入对公账号";
+                cell.textF.text = self.dataSourceM.companyInfo.businessToPublicAccount;
+                self.accountTF = cell.textF;
+                self.accountTF.delegate = self;
+                return cell;
+            }
+                break;
+            case 3:{
+                
+                cell.titleLab.text = @"开户银行";
+                cell.textF.placeholder = @"请输入开户银行";
+                cell.textF.text = self.dataSourceM.companyInfo.accountOpeningBank;
+                self.bankTF = cell.textF;
+                self.bankTF.delegate = self;
+                return cell;
+            }
+                break;
+            default:
+                break;
+        }
+    }
+    if (indexPath.section == 1){//身份证 证面
+        CELL_DEFINE_Identifier(UploadImageTableViewCell, @"idCardZmImgArr");
+        //CELL_DEFINE(UploadImageTableViewCell);
+        cell.multiCount = 1;
+        cell.imgUrlMuarr = self.idCardZmImgArr;
+        cell.imgBtnBlock = ^(NSMutableArray *imgArr) {
+            [self.idCardZmImgArr addObjectsFromArray:imgArr];
+            [self.tableV reloadData];
+        };
+        return cell;
+    }
+    if (indexPath.section == 2){//身份证 反面
+        CELL_DEFINE_Identifier(UploadImageTableViewCell, @"idCardFmImgArr");
+        //CELL_DEFINE(UploadImageTableViewCell);
+        cell.multiCount = 1;
+        cell.imgUrlMuarr = self.idCardFmImgArr;
+        cell.imgBtnBlock = ^(NSMutableArray *imgArr) {
+            [self.idCardFmImgArr addObjectsFromArray:imgArr];
+            [self.tableV reloadData];
+        };
+        return cell;
+    }
+    if (indexPath.section == 3){
+        CELL_DEFINE(UploadImageTableViewCell);
+        cell.multiCount = 1;
+        cell.imgUrlMuarr = self.businessLicenseImgArr;
+        cell.imgBtnBlock = ^(NSMutableArray *imgArr) {
+            [self.businessLicenseImgArr addObjectsFromArray:imgArr];
+            [self.tableV reloadData];
+        };
+        return cell;
+    }
+    CELL_DEFINE(UITableViewCell);
+    return cell;
+}
+-(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath{
+    if (indexPath.section == 0) {
+        return Size(120/2);
+    }
+    UploadImageTableViewCell *cell = (UploadImageTableViewCell *)[self tableView:tableView cellForRowAtIndexPath:indexPath];
+    
+    return cell.cellH;
+}
+-(UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section{
+    if (section == 1 ||
+        section == 2 ||
+        section == 3) {
+        UIView *view = [[UIView alloc] initWithFrame:CGRectMake(0, 0, kScreenWidth, Size(65/2))];
+        view.backgroundColor = RGBCOLOR(255, 255, 255);
+        
+        UILabel *lab = [UILabel ym_labelWithFrame:CGRectZero font:FONT_SIZE_12 textColor:COLOR_RGB_51];
+        NSMutableAttributedString *attr;
+        if (section == 1) {
+            attr = [[NSMutableAttributedString alloc]initWithString:@"*身份证正面" attributes:@{NSForegroundColorAttributeName:COLOR_RGB_51}];
+        }
+        if (section == 2) {
+            attr = [[NSMutableAttributedString alloc]initWithString:@"*身份证反面" attributes:@{NSForegroundColorAttributeName:COLOR_RGB_51}];
+        }
+        if (section == 3) {
+            attr = [[NSMutableAttributedString alloc]initWithString:@"*营业执照" attributes:@{NSForegroundColorAttributeName:COLOR_RGB_51}];
+        }
+        
+        [attr addAttribute:NSForegroundColorAttributeName value:COLOR_MAIN_ENTERPRISE range:NSMakeRange(0, 1)];
+        lab.attributedText = attr;
+        [view addSubview:lab];
+        [lab mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.left.mas_offset(Size(15));
+            make.top.mas_offset(Size(20));
+        }];
+        
+        return view;
+    }
+    return [UIView new];
+}
+-(UIView *)tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section{
+    if (section == 3) {
+        UIView *view = [[UIView alloc]initWithFrame:CGRectMake(0, 0, kScreenWidth, Size(198/2+20))];
+        UIButton *nextBtn = [UIButton ym_ButtonWithFrame:CGRectZero title:@"确认" backgroundColor:COLOR_MAIN_ENTERPRISE titleColor:RGBCOLOR(255, 255, 255) titleSize:Size(17)];
+        nextBtn.layer.cornerRadius = Size(5);
+        [view addSubview:nextBtn];
+        [nextBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.left.mas_offset(Size(15));
+            make.width.mas_equalTo(kScreenWidth-Size(30));
+            make.top.mas_offset(Size(50));
+            make.height.mas_equalTo(Size(98/2));
+        }];
+        [nextBtn addTarget:self action:@selector(doNextBtn) forControlEvents:UIControlEventTouchUpInside];
+        
+        return view;
+    }
+    return [UIView new];
+}
+-(CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section{
+    if (section == 3) {
+        return Size(198/2+20);
+    }
+    return Size(10);
+}
+-(CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section{
+    if (section == 0) {
+        return CGFLOAT_MIN;
+    }
+    
+    return Size(65/2);
+}
+
+#pragma mark - textField delegate
+-(void)textFieldDidEndEditing:(UITextField *)textField{
+    if (textField == self.nameTF) {
+        self.dataSourceM.companyInfo.companyName = textField.text;
+    }
+    
+    if (textField == self.codeTF) {
+        self.dataSourceM.companyInfo.socialUnifiedCreditCode = textField.text;
+    }
+    
+    if (textField == self.accountTF) {
+        self.dataSourceM.companyInfo.businessToPublicAccount = textField.text;
+    }
+    
+    if (textField == self.bankTF) {
+        self.dataSourceM.companyInfo.accountOpeningBank = textField.text;
+    }
+}
+
+#pragma mark - 懒加载
+-(NSMutableArray *)idCardZmImgArr{
+    if (!_idCardZmImgArr) {
+        _idCardZmImgArr = [NSMutableArray array];
+    }
+    return _idCardZmImgArr;
+}
+-(NSMutableArray *)idCardFmImgArr{
+    if (!_idCardFmImgArr) {
+        _idCardFmImgArr = [NSMutableArray array];
+    }
+    return _idCardFmImgArr;
+}
+-(NSMutableArray *)businessLicenseImgArr{
+    if (!_businessLicenseImgArr) {
+        _businessLicenseImgArr = [NSMutableArray array];
+    }
+    return _businessLicenseImgArr;
+}
+/*
+#pragma mark - Navigation
+
+// In a storyboard-based application, you will often want to do a little preparation before navigation
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
+    // Get the new view controller using [segue destinationViewController].
+    // Pass the selected object to the new view controller.
+}
+*/
+
+@end

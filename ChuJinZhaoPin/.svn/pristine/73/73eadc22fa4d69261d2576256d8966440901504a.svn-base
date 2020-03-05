@@ -1,0 +1,55 @@
+//
+//  ResumInitModel.m
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/24.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "ResumInitModel.h"
+
+@implementation ResumInitModel
+
+@end
+@implementation ResumInitWant
+
+@end
+@implementation ResumInitResumeEduExperienceList
+
+@end
+@implementation ResumInitResumeProjectExperienceList
+
+@end
+@implementation ResumInitHeadPicSource
+
+@end
+@implementation ResumInitTCjUserInfoDto
+
+@end
+@implementation ResumInitTCjCompanyInfo
+
+@end
+@implementation ResumInitTCjUserLoginDto
+
+@end
+@implementation ResumInitResumeWorkExperienceList
+
+@end
+@implementation ResumInitResumeSkillPointList
+
+@end
+@implementation ResumInitTCjResumeDto
++(NSDictionary *)mj_objectClassInArray{
+    return @{@"resumeEduExperienceList":[ResumInitResumeEduExperienceList class],
+             @"resumeProjectExperienceList":[ResumInitResumeProjectExperienceList class],
+             @"resumeWorkExperienceList":[ResumInitResumeWorkExperienceList class],
+             @"resumeSkillPointList":[ResumInitResumeSkillPointList class]
+             };
+}
+@end
+@implementation ResumInitLive
+
+@end
+@implementation ResumInitData
+
+@end

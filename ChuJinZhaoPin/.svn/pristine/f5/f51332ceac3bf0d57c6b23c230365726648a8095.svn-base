@@ -1,0 +1,24 @@
+//
+//  SkillViewController.h
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/10.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "BaseViewController.h"
+#import "ResumInitModel.h"
+NS_ASSUME_NONNULL_BEGIN
+
+/**
+ 技能证书
+ */
+@interface SkillViewController : BaseViewController
+@property (nonatomic, strong) NSArray<ResumInitResumeSkillPointList *> *resumeSkillArr;
+@property (nonatomic, copy) NSString *resumeId;
+@property (nonatomic, copy) NSString *skillId;
+
+@property (nonatomic, copy) void(^addResumeBlock)(NSString *resumeId);
+@end
+
+NS_ASSUME_NONNULL_END

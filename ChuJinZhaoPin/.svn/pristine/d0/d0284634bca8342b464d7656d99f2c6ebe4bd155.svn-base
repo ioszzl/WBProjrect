@@ -1,0 +1,39 @@
+//
+//  JobExperienceModel.h
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/23.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "BaseModel.h"
+
+NS_ASSUME_NONNULL_BEGIN
+@interface JobExperienceData :NSObject
+@property (nonatomic , assign) NSInteger              ID;//工作经验id
+@property (nonatomic , assign) NSInteger              scale;//公司规模(0:50人一下,1:50-100人,2:100人以上)
+@property (nonatomic , copy) NSString              * work_describ;//工作描述
+@property (nonatomic , copy) NSString              * work_job;//职能
+@property (nonatomic , copy) NSString              * company_type_str;//公司类型
+@property (nonatomic , assign) NSInteger             company_type;//0,（0.上市公司 1.国企 2.民营 3.股份制 4.事业单位5.国家机关 6.合资 -1.其他'）',
+@property (nonatomic , assign) NSInteger              resume_id;//简历id
+@property (nonatomic , copy) NSString              * loc_company;//公司
+@property (nonatomic , copy) NSString              * job_type;//工作类型(0.全职 1.兼职)',
+@property (nonatomic , assign) NSInteger              start_time;//工作开始时间
+@property (nonatomic , copy) NSString              * scale_str;//公司规模
+@property (nonatomic , assign) NSInteger              work_class_id;
+@property (nonatomic , copy) NSString              * work_class_name;//行业名称
+@property (nonatomic , assign) NSInteger              end_time;//工作结束时间
+@property (nonatomic , copy) NSString              * is_deleted;
+@property (nonatomic , assign) NSInteger              create_time;
+@property (nonatomic , copy) NSString              * department;//部门
+@property (nonatomic , copy) NSString              * work_position;//职位
+
+@end
+
+
+@interface JobExperienceModel : BaseModel
+@property (nonatomic , strong) JobExperienceData              * data;
+@end
+
+NS_ASSUME_NONNULL_END

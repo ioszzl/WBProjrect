@@ -1,0 +1,33 @@
+//
+//  EducationExperienceModel.h
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/27.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "BaseModel.h"
+
+NS_ASSUME_NONNULL_BEGIN
+@interface EducationExperienceData :NSObject
+
+@property (nonatomic , assign) NSInteger              ID;//教育经历id
+@property (nonatomic , assign) NSInteger              create_time;//": 1541141166000,
+@property (nonatomic , copy) NSString              * is_deleted;//": "n",
+@property (nonatomic , assign) NSInteger              start_time;//": 1541088000000,//开始时间
+@property (nonatomic , assign) NSInteger              end_time;//": 1541088000000,//结束时间
+@property (nonatomic , copy) NSString              * school;//学校
+@property (nonatomic , assign) NSInteger              education_level;//学历 (1.大专 2.本科 3.研究生 4.博士)
+@property (nonatomic , copy) NSString              * describ;//专业描述
+@property (nonatomic , copy) NSString              * major;//专业
+@property (nonatomic , copy) NSString              * overseas_exp;//"1",海外经历（0.无 1.有）
+@property (nonatomic , assign) NSInteger              resume_id;//简历id,
+@property (nonatomic , copy) NSString              * education_level_str;//学历
+@end
+
+
+@interface EducationExperienceModel : BaseModel
+@property (nonatomic , strong) EducationExperienceData              * data;
+@end
+
+NS_ASSUME_NONNULL_END

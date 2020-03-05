@@ -1,0 +1,365 @@
+//
+//  AppDelegate.m
+//  TestDemo
+//
+//  Created by 孙若淮 on 14/03/2018.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "AppDelegate.h"
+#import "MainTabBarController.h"
+#import "BaseNavigationController.h"
+#import "AFNetworkActivityIndicatorManager.h"
+#import "AFNetworkReachabilityManager.h"
+#import "SelectRoleViewController.h"
+#import <IQKeyboardManager.h>
+
+#import <UMShare/UMSocialManager.h>
+#import "AppDelegate+ThirdConfig.h"
+#import "ECDevice.h"
+#import "DeviceDelegateHelper.h"
+@interface AppDelegate ()
+
+@end
+
+@implementation AppDelegate
+
+
+- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
+    self.netWorkState = YES;
+    self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+    self.window.backgroundColor = [UIColor whiteColor];
+    [self.window makeKeyAndVisible];
+    
+    [self requestGloableData];
+    
+    [self thirdConfig];
+    
+    [self shanYanInit];
+    
+    if (!DefaultsGetObject(KEY_TOKEN)) {
+        BaseNavigationController *navC = [[BaseNavigationController alloc] initWithRootViewController:[SelectRoleViewController new]];
+        self.window.rootViewController = navC;
+    }else{
+        self.userType = DefaultsGetInteger(KEY_USER_TYPE);
+        self.userModel = [UserModel mj_objectWithKeyValues:[DefaultsGetObject(KEY_USER_DATA) mj_keyValues]];
+        self.token = DefaultsGetObject(KEY_TOKEN);
+        
+        MainTabBarController *vc = [MainTabBarController new];
+        self.window.rootViewController = vc;
+    }
+    
+    
+    
+    //[UIApplication sharedApplication].statusBarStyle = UIStatusBarStyleLightContent;
+    
+    [self qiMoKeFu];
+
+    [ECDevice sharedInstance].delegate = [DeviceDelegateHelper sharedInstance];
+    [self loginIM];
+    [self networkMonitoring];
+    
+    return YES;
+}
+-(void)loginIM{
+    
+    if (self.userModel) {
+        /*
+         调用登录接口前，调用该接口切换服务器环境；不调用该函数，默认使用的是生产环境；
+         参数：isSandBox 是否沙盒环境
+         是否成功 0:成功 非0失败
+         */
+        
+        NSInteger status;
+#if DEBUG
+        status = [[ECDevice sharedInstance] SwitchServerEvn:YES];
+#else
+        status = [[ECDevice sharedInstance] SwitchServerEvn:NO];
+#endif
+        if (status == 0) {
+            ECLoginInfo * loginInfo = [[ECLoginInfo alloc] init];
+            loginInfo.username = self.userModel.userId;//用户登录app的用户id即可。
+            loginInfo.appKey = @"8a216da866f71d040167053f9c07044b";//@"appid";
+            loginInfo.appToken = @"03a546f15acfda5f2dde7ee596784f4e";//@"apptoken";
+            loginInfo.authType = LoginAuthType_NormalAuth;//默认方式登录
+            loginInfo.mode = LoginMode_InputPassword;
+            [[ECDevice sharedInstance] login:loginInfo completion:^(ECError *error){
+                if (error.errorCode == ECErrorType_NoError) {
+                    //登录成功
+                    NSLog(@"IM...登录成功");
+                }else{
+                    //登录失败
+                    NSLog(@"IM...登录失败");
+                }
+            }];
+        }
+        
+        
+    }
+    
+}
+- (BOOL)application:(UIApplication *)app openURL:(NSURL *)url options:(NSDictionary<UIApplicationOpenURLOptionsKey,id> *)options{
+    NSLog(@"--openURL-");
+    
+    //友盟
+    BOOL flag = [[UMSocialManager defaultManager] handleOpenURL:url options:options];
+    if (!flag) {
+        // 其他如支付等SDK的回调
+    }
+    return flag;
+    
+    return YES;
+}
+
+#pragma mark - 网络监测
+- (void)networkMonitoring
+{
+    
+    AFNetworkReachabilityManager *netManager = [AFNetworkReachabilityManager sharedManager];
+    [netManager startMonitoring];  //开始监听
+    [netManager setReachabilityStatusChangeBlock:^(AFNetworkReachabilityStatus status){
+        
+        if (status == AFNetworkReachabilityStatusNotReachable)
+        {
+            //showAlert
+            self.netWorkState = NO;
+            NSLog(@"没有网络");
+            
+            return;
+            
+        }else if (status == AFNetworkReachabilityStatusUnknown){
+            self.netWorkState = YES;
+            NSLog(@"未知网络");
+            
+        }else if (status == AFNetworkReachabilityStatusReachableViaWWAN){
+            self.netWorkState = YES;
+            NSLog(@"WiFi");
+            
+        }else if (status == AFNetworkReachabilityStatusReachableViaWiFi){
+            self.netWorkState = YES;
+            NSLog(@"手机网络");
+        }
+        
+    }];
+    
+}
+
+- (void)applicationWillResignActive:(UIApplication *)application {
+    // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
+    // Use this method to pause ongoing tasks, disable timers, and invalidate graphics rendering callbacks. Games should use this method to pause the game.
+}
+
+
+- (void)applicationDidEnterBackground:(UIApplication *)application {
+    // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
+    // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
+}
+
+
+- (void)applicationWillEnterForeground:(UIApplication *)application {
+    // Called as part of the transition from the background to the active state; here you can undo many of the changes made on entering the background.
+}
+
+
+- (void)applicationDidBecomeActive:(UIApplication *)application {
+    // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
+}
+
+
+- (void)applicationWillTerminate:(UIApplication *)application {
+    // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
+}
+
+#pragma mark - global
+-(void)requestGloableData{
+    [[RHNetAPIManager sharedManager]appSearchCriteriaOPT].hiddenLoading().start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+        if (data) {
+            self.gloableModel = [FilterModel mj_objectWithKeyValues:data];
+        }
+    });
+}
+
+/**
+ 学历
+ 
+ @param educaID 学历ID
+ @return 学历名称
+ */
+-(NSString *)educationNameWithID:(NSInteger)educaID{
+    NSString *education = @"";
+    if (educaID == 0) {
+        education = @"不限";
+    }
+    for (Scale *s in self.gloableModel.data.eduLevel) {
+        if (s.ID == educaID) {
+            education = s.value;
+            break;
+        }
+    }
+    
+    return education;
+}
+
+/**
+ 求职 工作经验年限
+ 
+ @param workID 工作年限ID
+ @return 工作年限
+ */
+-(NSString *)userWorkYearNameWithID:(NSInteger)workID{
+    NSString *work = @"";
+    if (workID == 5) {
+        work = @"10年以上";
+    }
+    for (Scale *s in self.gloableModel.data.userWorkYear) {
+        if (s.ID == workID) {
+            work = s.value;
+            break;
+        }
+    }
+    
+    return work;
+}
+/**
+ 企业 工作经验年限
+ 
+ @param workID 工作年限ID
+ @return 工作年限
+ */
+-(NSString *)companyWorkYearNameWithID:(NSInteger)workID{
+    NSString *work = @"";
+    for (Scale *s in self.gloableModel.data.companyWorkYear) {
+        if (s.ID == workID) {
+            work = s.value;
+            break;
+        }
+    }
+    
+    return work;
+}
+
+/**
+ 薪资
+ 
+ @param salaID 薪资ID
+ @return 薪资
+ */
+-(NSString *)salaryNameWithID:(NSInteger)salaID{
+    NSString *salary = @"";
+    for (Scale *s in self.gloableModel.data.salary) {
+        if (s.ID == salaID) {
+            salary = s.value;
+            break;
+        }
+    }
+    
+    return salary;
+}
+
+/**
+ 公司类型
+ 
+ @param companyTypeID 公司类型ID
+ @return 公司类型
+ */
+-(NSString *)companyTypeNameWithID:(NSInteger)companyTypeID{
+    NSString *companyType = @"";
+    for (Scale *s in self.gloableModel.data.companyType) {
+        if (s.ID == companyTypeID) {
+            companyType = s.value;
+            break;
+        }
+    }
+    
+    return companyType;
+}
+
+/**
+ 公司规模
+ 
+ @param scaleID 公司规模ID
+ @return 公司规模
+ */
+-(NSString *)companyScaleNameWithID:(NSInteger)scaleID{
+    NSString *scale = @"";
+    for (Scale *s in self.gloableModel.data.scale) {
+        if (s.ID == scaleID) {
+            scale = s.value;
+            break;
+        }
+    }
+    
+    return scale;
+}
+
+- (void)closeAllPresentedViewControllers {
+    
+    
+    
+    if (![self.window.rootViewController isKindOfClass:[MainTabBarController class]]) {
+        
+        return;
+        
+    }
+    
+    MainTabBarController *mainVC = (MainTabBarController *)self.window.rootViewController;
+    
+    BaseNavigationController *currentNav = mainVC.viewControllers[mainVC.selectedIndex];
+    
+    UIViewController *currentVC = currentNav.topViewController;
+    
+    
+    
+    //第一部分 导航控制器的顶部控制器弹出的模态
+    
+    UIViewController *vcPresentVC = currentVC.presentedViewController;
+    
+    if (vcPresentVC) {
+        
+        while (vcPresentVC.presentedViewController)  {
+            
+            vcPresentVC = vcPresentVC.presentedViewController;
+            
+        }
+        
+        [vcPresentVC dismissViewControllerAnimated:NO completion:nil];
+        
+    }
+    
+    
+    //第二部分 导航控制器弹出的模态
+    
+    UIViewController *navPresentVC = currentNav.presentedViewController;
+    
+    if (navPresentVC) {
+        
+        while (navPresentVC.presentedViewController)  {
+            
+            navPresentVC = navPresentVC.presentedViewController;
+            
+        }
+        
+        [navPresentVC dismissViewControllerAnimated:NO completion:nil];
+        
+    }
+    
+    
+    //第三部分 tab控制器弹出的模态
+    
+    UIViewController *tabPresentVC = mainVC.presentedViewController;
+    
+    if (tabPresentVC) {
+        
+        while (tabPresentVC.presentedViewController)  {
+            
+            tabPresentVC = tabPresentVC.presentedViewController;
+            
+        }
+        
+        [tabPresentVC dismissViewControllerAnimated:NO completion:nil];
+        
+    }
+    
+}
+
+@end

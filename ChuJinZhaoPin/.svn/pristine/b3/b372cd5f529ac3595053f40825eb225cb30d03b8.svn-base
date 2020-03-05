@@ -1,0 +1,118 @@
+//
+//  ResumeCertificateTableViewCell.m
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/9.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "ResumeCertificateTableViewCell.h"
+@interface ResumeCertificateTableViewCell()
+@property (nonatomic, strong) NSMutableArray *labMuArr;
+@end
+
+@implementation ResumeCertificateTableViewCell
+-(instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier{
+    self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
+    if (self) {
+        self.selectionStyle = UITableViewCellSelectionStyleNone;
+        [self initUI];
+    }
+    return self;
+}
+-(void)initUI{
+    self.backgroundColor = COLOR_BG;
+    
+    UIView *bgV = [[UIView alloc]initWithFrame:CGRectZero];
+    self.bgV = bgV;
+    bgV.backgroundColor = RGBCOLOR(255, 255, 255);
+    [self.contentView addSubview:bgV];
+    [bgV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_offset(Size(15));
+        make.top.mas_offset(0);
+        make.bottom.mas_offset(0);
+        make.right.mas_offset(-Size(15));
+    }];
+    
+    
+    
+    UILabel *itemLab = [UILabel ym_labelWithFrame:CGRectZero font:[UIFont systemFontOfSize:Size(14)] textColor:COLOR_RGB_153];
+    itemLab.text = @"证书：";
+    [bgV addSubview:itemLab];
+    [itemLab mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_offset(Size(15));
+        make.top.mas_offset(Size(48/2));
+    }];
+    
+//    _contentLab = [UILabel ym_labelWithFrame:CGRectZero font:[UIFont systemFontOfSize:Size(14)] textColor:COLOR_RGB_51];
+//    [bgV addSubview:_contentLab];
+//    [_contentLab mas_makeConstraints:^(MASConstraintMaker *make) {
+//        make.left.equalTo(itemLab.mas_right).mas_offset(Size(15));
+//        make.top.equalTo(itemLab);
+//        make.right.mas_offset(-Size(10));
+//        make.bottom.equalTo(bgV.mas_bottom).mas_offset(-Size(48/2));
+//    }];
+}
+-(void)setCertificateArr:(NSArray *)certificateArr{
+    if (![_certificateArr isEqualToArray:certificateArr]) {
+        if (self.labMuArr.count > 0) {
+            for (UILabel *lab in self.labMuArr) {
+                [lab removeFromSuperview];
+            }
+            [self.labMuArr removeAllObjects];
+        }
+        
+        _certificateArr = certificateArr;
+        for (int i=0; i<certificateArr.count; i++) {
+            UILabel *lab = [UILabel ym_labelWithFrame:CGRectZero font:[UIFont systemFontOfSize:Size(14)] textColor:COLOR_RGB_51 textAlignment:NSTextAlignmentCenter];
+            lab.text = certificateArr[i];
+            [self.bgV addSubview:lab];
+            [lab mas_makeConstraints:^(MASConstraintMaker *make) {
+                make.left.mas_equalTo(Size(120/2) + ((kScreenWidth-Size(30+60+15+10*2))/3 + Size(10)) * (i%3));
+                make.top.mas_offset(Size(48/2) + Size(20+10)*(i/3));
+                make.height.mas_equalTo(Size(20));
+                make.width.mas_equalTo((kScreenWidth-Size(30+60+15+10*2))/3);
+                
+                if (i == certificateArr.count-1) {
+                    make.bottom.mas_offset(-Size(30));
+                }
+            }];
+            [self.labMuArr addObject:lab];
+        }
+    }
+    
+    
+    
+}
+-(void)layoutSubviews{
+    [super layoutSubviews];
+    
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        UIBezierPath *maskPath = [UIBezierPath bezierPathWithRoundedRect:_bgV.bounds byRoundingCorners:(UIRectCornerBottomLeft | UIRectCornerBottomRight) cornerRadii:CGSizeMake(Size(5),Size(5))];//圆角大小
+        CAShapeLayer *maskLayer = [[CAShapeLayer alloc] init];
+        maskLayer.frame = _bgV.bounds;
+        maskLayer.path = maskPath.CGPath;
+        _bgV.layer.mask = maskLayer;
+    });
+    
+    
+}
+
+-(NSMutableArray *)labMuArr{
+    if (!_labMuArr) {
+        _labMuArr = [NSMutableArray array];
+    }
+    return _labMuArr;
+}
+- (void)awakeFromNib {
+    [super awakeFromNib];
+    // Initialization code
+}
+
+- (void)setSelected:(BOOL)selected animated:(BOOL)animated {
+    [super setSelected:selected animated:animated];
+
+    // Configure the view for the selected state
+}
+
+@end

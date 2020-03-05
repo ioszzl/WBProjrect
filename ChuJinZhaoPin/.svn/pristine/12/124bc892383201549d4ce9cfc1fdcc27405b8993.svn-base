@@ -1,0 +1,268 @@
+//
+//  CompanyInfoDetailViewController.m
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/14.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "CompanyInfoDetailViewController.h"
+#import "CompanyDetailView.h"
+#import "ResumeHeaderView.h"
+#import "CompanyMessageTableViewCell.h"
+#import "CompanyIntroTableViewCell.h"
+#import "CompanyEnvironmentTableViewCell.h"
+#import "JobRequireDetailHeaderView.h"
+#import "CompanyBusinessInfoViewController.h"
+
+@interface CompanyInfoDetailViewController ()<UITableViewDelegate,UITableViewDataSource>
+@property (nonatomic, strong) UITableView *tableV;
+@property (nonatomic, strong) CompanyDetailView *companyV;
+
+@property (nonatomic, strong) CompanyDetailInfoModel *model;
+
+@end
+
+@implementation CompanyInfoDetailViewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    [self initUI];
+    
+    [self requestInfoData];
+}
+-(void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    
+    self.navigationController.navigationBar.translucent = YES;
+    [self.navigationController.navigationBar setBackgroundImage:[UIImage new] forBarMetrics:UIBarMetricsDefault];
+    [self.navigationController.navigationBar setShadowImage:[UIImage new]];
+    
+    [self scrollViewDidScroll:self.tableV];
+}
+-(void)viewWillDisappear:(BOOL)animated {
+    [super viewWillDisappear:animated];
+    
+    self.navigationController.navigationBar.translucent = NO;
+    [self.navigationController.navigationBar setBackgroundImage:nil forBarMetrics:UIBarMetricsDefault];
+    [self.navigationController.navigationBar setShadowImage:nil];
+    
+}
+-(void)initUI{
+    _tableV = [[UITableView alloc]initWithFrame:CGRectZero style:UITableViewStyleGrouped];
+    _tableV.tableFooterView = [UIView new];
+    _tableV.separatorStyle = UITableViewCellSeparatorStyleNone;
+    _tableV.showsVerticalScrollIndicator = NO;
+    _tableV.showsHorizontalScrollIndicator = NO;
+    _tableV.backgroundColor = COLOR_BG;
+    _tableV.dataSource = self;
+    _tableV.delegate = self;
+    [_tableV registerClass:[JobRequireDetailHeaderView class] forHeaderFooterViewReuseIdentifier:@"companyInfoHeaderV"];
+    if (@available(iOS 11.0, *)) {
+        _tableV.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
+    } else {
+        // Fallback on earlier versions
+    }
+    [self.view addSubview:_tableV];
+    [_tableV mas_updateConstraints:^(MASConstraintMaker *make) {
+        make.edges.equalTo(self.view);
+    }];
+    
+    UIView *view = [[UIView alloc]initWithFrame:CGRectMake(0, 0, kScreenWidth, Size(630/2+20))];
+    view.backgroundColor = RGBCOLOR(255, 255, 255);
+    _tableV.tableHeaderView = view;
+    
+    CompanyDetailView *companyV = [[CompanyDetailView alloc]initWithFrame:CGRectZero];
+    companyV.focusBtn.hidden = YES;
+    [view addSubview:companyV];
+    [companyV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.top.right.mas_offset(0);
+        make.height.mas_equalTo(Size(630/2));
+    }];
+    self.companyV = companyV;
+}
+
+-(void)updateUI{
+    [self.companyV.logoImgV sd_setImageWithURL:[NSURL URLWithString:self.model.data.logoUrl] placeholderImage:[UIImage imageNamed:@"前台默认站位图"]];
+    self.companyV.focusCountLab.text = [NSString stringWithFormat:@"%ld个求职者已关注",self.model.data.postNum];//@"128个求职者已关注";
+    self.companyV.nameLab.text = self.model.data.company_name;//@"好未来";
+    self.companyV.scoreLab.text = [NSString stringWithFormat:@"%@分",JUDGE_NUll_DEF(self.model.data.scoreMap.totalStar, @"0.0")];//@"4.4分";
+    self.companyV.messageScoreLab.text = JUDGE_NUll_DEF(self.model.data.scoreMap.realStar, @"0.0") ;///@"5.0";
+    self.companyV.environmentScoreLab.text = JUDGE_NUll_DEF(self.model.data.scoreMap.enviStar,@"0.0");//@"4.9";
+    self.companyV.interviewerScoreLab.text = JUDGE_NUll_DEF(self.model.data.scoreMap.interStar,@"0.0");//@"4.8";
+    
+    self.companyV.score = self.model.data.scoreMap.totalStar;
+    self.companyV.markArr = self.model.data.describeList;
+    
+    self.companyV.focusBtn.hidden = YES;
+    
+}
+#pragma mark - request
+-(void)requestInfoData{
+    
+    NSMutableDictionary *paramDic = [NSMutableDictionary dictionary];
+    [paramDic setValue:AppDelegateInstance.token forKey:@"token"];
+    
+    [[RHNetAPIManager sharedManager]appToCompanyInfoDetailOPT:paramDic].hiddenLoading().start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+        if (data) {
+            self.model = [CompanyDetailInfoModel mj_objectWithKeyValues:data];
+            
+            
+            [self updateUI];
+            [self.tableV reloadData];
+        }
+    });
+}
+
+#pragma mark - action
+-(void)doFocusBtn{
+    
+}
+#pragma mark - tableview delegate
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView{
+    
+    return 3;
+}
+-(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section{
+    
+    return 1;
+}
+-(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
+    
+    if (indexPath.section == 0) {
+        CELL_DEFINE(CompanyMessageTableViewCell);
+        cell.manageLab.text = self.model.data.company_type_str;
+        cell.peopleLab.text = self.model.data.scale_str;
+        cell.tradeLab.text = self.model.data.describ;
+        cell.addressLab.text = self.model.data.company_address;
+        
+        return cell;
+    }
+    if (indexPath.section == 1) {
+        CELL_DEFINE(CompanyIntroTableViewCell);
+        cell.contentLab.text = self.model.data.company_describe;
+        [cell.websitBtn setTitle:self.model.data.company_host_url forState:UIControlStateNormal];
+        //cell.contentLab.text  = @"，好未来好未来好未来好未来，\n\n好未来好未来好未来，好未来好未来好未来好未来，好未来好未来好未来，好未来好未来好未来好未来好未来\n\n，好未来好未来好未来好未来好未来，好未来好未来好未来，好未来好未来好未来好未来，好未来好未来";
+        //[cell.websitBtn setTitle:@"http://www.badu.com" forState:UIControlStateNormal];
+        cell.websitBtnBlock = ^(UIButton * _Nonnull btn) {
+            NSString *url =  [self.model.data.company_host_url hasPrefix:@"http"] ? self.model.data.company_host_url : [NSString stringWithFormat:@"http://%@",self.model.data.company_host_url];
+            if (@available(iOS 10.0, *)) {
+                [[UIApplication sharedApplication] openURL:[NSURL URLWithString:url] options:@{} completionHandler:nil];
+            } else {
+                [[UIApplication sharedApplication] openURL:[NSURL URLWithString:url]];
+            }
+        };
+        cell.queryBtnBlock = ^{
+            
+            NSMutableDictionary *dataDic = [NSMutableDictionary dictionary];
+            [dataDic setValue:self.model.data.company_name forKey:@"companyName"];
+            
+            NSMutableDictionary *paramDic = [NSMutableDictionary dictionary];
+            [paramDic setValue:[dataDic mj_JSONString] forKey:@"data"];
+            
+            [[RHNetAPIManager sharedManager]appIndustryInfoOPT:paramDic].start(^(id data, NSString *msg, NSInteger code, NSError *error) {
+                //if (data) {
+                CompanyBusinessInfoViewController *vc = [CompanyBusinessInfoViewController new];
+                vc.companyDetailInfoM = self.model;
+                [self.navigationController pushViewController:vc animated:YES];
+                //                }
+            });
+            
+            
+        };
+        return cell;
+    }
+    if (indexPath.section == 2) {
+        CELL_DEFINE(CompanyEnvironmentTableViewCell);
+        NSMutableArray *tempImgArr = [NSMutableArray array];
+        for (CompanyDetailImageList *l in self.model.data.imageList) {
+            [tempImgArr addObject:l.imageUrl];
+        }
+        cell.imgArr = tempImgArr;
+        return cell;
+    }
+   
+    CELL_DEFINE(UITableViewCell);
+    return cell;
+}
+-(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath{
+   
+    if (indexPath.section == 0) {
+        CompanyMessageTableViewCell *cell = (CompanyMessageTableViewCell *)[self tableView:tableView cellForRowAtIndexPath:indexPath];
+        CGSize size = [cell.addressLab.text ym_calculateSize:FONT_SIZE_12 maxWidth:kScreenWidth-Size(15+72/2) lineSpacing:2];
+        return size.height+Size(78/2 +16 + 5);
+    }
+    if (indexPath.section == 1) {
+        CompanyIntroTableViewCell *cell = (CompanyIntroTableViewCell *)[self tableView:tableView cellForRowAtIndexPath:indexPath];
+        CGSize size = [cell.contentLab.text ym_calculateSize:[UIFont systemFontOfSize:13] maxWidth:kScreenWidth-Size(30) lineSpacing:2];
+        return size.height+Size(68/2 + 30 + 35 + 20 + 5 + 13);
+    }
+    if (indexPath.section == 2) {
+        return Size(435/2+20+5);
+    }
+    return Size(198/2);
+}
+-(UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section{
+   
+    JobRequireDetailHeaderView *view = [tableView dequeueReusableHeaderFooterViewWithIdentifier:@"companyInfoHeaderV"];
+    view.imgV.image = [UIImage imageNamed:@"home_line_blue"];
+    if (section == 0) {
+        view.titleLab.text = @"公司信息";
+    }
+    if (section == 1) {
+        view.titleLab.text = @"公司介绍";
+    }
+    if (section == 2) {
+        view.titleLab.text = @"公司环境";
+    }
+    return view;
+    return view;
+}
+-(CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section{
+    
+    return Size(90/2);
+}
+-(UIView *)tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section{
+    return [UIView new];
+}
+-(CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section{
+    return CGFLOAT_MIN;
+}
+
+#pragma mark - scroll delegate
+-(void)scrollViewDidScroll:(UIScrollView *)scrollView{
+    
+    //计算滚动的便宜量
+    CGFloat offSetY = scrollView.contentOffset.y;
+    
+    // 处理导航条
+    // 计算当前的透明度
+    CGFloat alpha = offSetY / (Size(250/2)-kNavBarHeight);
+    self.navigationController.navigationBar.barTintColor = RGBACOLOR(75, 179, 240, alpha);
+    
+    //NSLog(@"%f",offSetY);
+    if (offSetY > (Size(250/2) - kNavBarHeight)) {
+        [self.navigationController.navigationBar setBackgroundImage:nil forBarMetrics:UIBarMetricsDefault];
+    }else{
+        //[self.navigationController.navigationBar setBackgroundImage:[UIImage new] forBarMetrics:UIBarMetricsDefault];
+        [self.navigationController.navigationBar setBackgroundImage:[UIImage ym_imageWithColor:RGBACOLOR(75, 179, 240, alpha) size:CGSizeMake(kScreenWidth, kNavBarHeight)] forBarMetrics:UIBarMetricsDefault];
+    }
+    
+    
+}
+
+#pragma mark - 懒加载
+
+/*
+#pragma mark - Navigation
+
+// In a storyboard-based application, you will often want to do a little preparation before navigation
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
+    // Get the new view controller using [segue destinationViewController].
+    // Pass the selected object to the new view controller.
+}
+*/
+
+@end

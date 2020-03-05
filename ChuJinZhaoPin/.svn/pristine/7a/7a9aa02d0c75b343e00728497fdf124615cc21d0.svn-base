@@ -1,0 +1,54 @@
+//
+//  ResumeExperienceTableViewCell.h
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/9.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+#import "ResumInitModel.h"
+NS_ASSUME_NONNULL_BEGIN
+
+/**
+ 工作经验cell
+ */
+@interface ResumeExperienceTableViewCell : UITableViewCell
+
+/**
+ 工作时间
+ */
+@property (nonatomic, strong) UILabel *dateLab;
+
+/**
+ 所在部门
+ */
+@property (nonatomic, strong) UILabel *departmentLab;
+
+/**
+ 公司名称
+ */
+@property (nonatomic, strong) UILabel *companyLab;
+
+/**
+ 所在岗位
+ */
+@property (nonatomic, strong) UILabel *positionLab;
+
+/**
+ 工作描述
+ */
+@property (nonatomic, strong) UILabel *jobContentLab;
+
+@property (nonatomic, strong) UIButton *editBtn;
+
+@property (nonatomic, strong) UIView *bgV;
+
+@property (nonatomic, assign) BOOL hiddenLine;
+
+@property (nonatomic, strong) ResumInitResumeWorkExperienceList *list;
+
+@property (nonatomic, copy) void(^editBtnBlock)(void);
+@end
+
+NS_ASSUME_NONNULL_END

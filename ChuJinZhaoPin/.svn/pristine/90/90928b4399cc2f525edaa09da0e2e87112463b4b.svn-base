@@ -1,0 +1,27 @@
+//
+//  CompanyVerifyModel.m
+//  ChuJinZhaoPin
+//
+//  Created by eims on 2018/11/27.
+//  Copyright © 2018 Monster. All rights reserved.
+//
+
+#import "CompanyVerifyModel.h"
+
+@implementation CompanyVerifyModel
+
+@end
+@implementation CompanyVerifyCompanyInfo
+
+@end
+@implementation CompanyVerifyData
++(NSDictionary *)mj_objectClassInArray{
+    return @{@"businessLicenseImgList":[CompanyVerifyImgList class],
+             @"idCardZmImg":[CompanyVerifyImgList class],
+             @"idCardFmImg":[CompanyVerifyImgList class]
+             };
+}
+@end
+
+@implementation CompanyVerifyImgList
+@end
